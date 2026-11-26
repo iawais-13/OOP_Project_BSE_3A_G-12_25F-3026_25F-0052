@@ -239,7 +239,208 @@ public:
 
 
 // =====================================================================
-//  HELPER FUNCTIONS (for enums)
+//  MODULE 3 : CHARACTER HIERARCHY  (Part A)
+// ---------------------------------------------------------------------
+//  INHERITANCE lets a child class reuse the data and functions of a
+//  parent class. Every person in the cottage has a name, a role and a
+//  nationality, so we write these things ONCE in the Character class
+//  and all other classes inherit them.
+//
+//  Classes made in Part A:
+//
+//      Character  (abstract)
+//      ├── Victim          (Business Owner)
+//      ├── Detective       (Player)
+//      └── Suspect  (abstract)
+//          └── HouseHelp
+//              ├── Cook
+//              ├── Guard
+//              └── Servant
+//
+//  BusinessRelations, CloseRelations, Partner, OwnerChild and PA
+//  (the diamond problem) will be added in Part B.
+// =====================================================================
+
+// ---------------------------------------------------------------------
+//  Class: Character  (ABSTRACT BASE CLASS)
+//  Holds the common data of every person in the game.
+//  It has a PURE VIRTUAL function display(), so no object of
+//  Character can be made. Every child class must write its own display().
+// ---------------------------------------------------------------------
+class Character
+{
+protected:
+    string characterName;   // e.g. "Mr.Enzo"
+    string characterRole;   // e.g. "Cook"
+    string nationality;     // e.g. "Italian"
+    bool isCulprit;         // true only for the selected culprit
+
+    // Prints name, role and nationality.
+    // Child classes call it inside their own display() (code reuse).
+    void displayBasicInfo() const;
+
+public:
+    Character(string name, string role, string nationalityText);
+
+    // VIRTUAL destructor: when a child object is deleted through a
+    // Character pointer, the child's destructor is also called.
+    virtual ~Character();
+
+    // ----- Getters -----
+    string getName() const;
+    string getRole() const;
+    string getNationality() const;
+    bool getIsCulprit() const;
+
+    // ----- Setters -----
+    void setName(string name);
+    void setNationality(string nationalityText);
+
+    // Minimum credibility the detective needs to interview this person.
+    // VIRTUAL: every child class returns its own value (polymorphism),
+    // so we never need a long if-else chain on the role.
+    virtual int getRequiredCredibility() const;
+
+    // Returns true if the detective's credibility is high enough
+    bool canBeInterviewed(int credibility) const;
+
+    // Returns the letter clue of this person (for Word 2).
+    // The Detective has no clue, so the base version returns an empty clue.
+    virtual Clue getClue() const;
+
+    // PURE VIRTUAL function ( = 0 ). It makes Character an abstract class.
+    virtual void display() const = 0;
+};
+
+
+// ---------------------------------------------------------------------
+//  Class: Victim  (inherits Character)
+//  The French Business Owner. He is interviewed but is NOT a suspect.
+//  He gives letter number 1 of Word 2.
+// ---------------------------------------------------------------------
+class Victim : public Character
+{
+private:
+    WordRow clueRowChar;    // always WORD_2
+    char letterClueChar;    // letter given by the victim
+    int boardPosChar;       // position of that letter in Word 2
+
+public:
+    // static const: one fixed value shared by all Victim objects
+    static const int REQUIRED_CREDIBILITY = 80;
+
+    Victim(string name, string nationalityText, char letter, int position);
+
+    char getLetter() const;
+    int getPosition() const;
+    WordRow getRow() const;
+
+    Clue getClue() const override;
+    int getRequiredCredibility() const override;
+    void display() const override;
+};
+
+
+// ---------------------------------------------------------------------
+//  Class: Detective  (inherits Character)
+//  The PLAYER. Stores credibility, number of turns and solved words.
+//  NOTE: The turn count is increased by the GameEngine. The Detective
+//  only stores it. The letter racks will be added in Module 5.
+// ---------------------------------------------------------------------
+class Detective : public Character
+{
+private:
+    int credibility;        // starts from 100, game is lost at 0
+    int turns;              // turns used so far
+    string solvedWords;     // words solved correctly, e.g. "GERMANS"
+
+public:
+    Detective(string name, int startingCredibility);
+    ~Detective();
+
+    // ----- Getters -----
+    int getCredibility() const;
+    int getTurns() const;
+    string getSolvedWords() const;
+
+    // ----- Setters / actions -----
+    void setTurns(int turnCount);
+    void loseCredibility(int amount);   // never goes below 0
+    void addSolvedWord(string word);
+
+    void display() const override;
+};
+
+
+// ---------------------------------------------------------------------
+//  Class: Suspect  (inherits Character)  -  ABSTRACT
+//  Parent of all seven suspects. The clue data is PROTECTED so that
+//  every suspect class can use it directly.
+//  display() is still pure virtual, so Suspect is also abstract.
+// ---------------------------------------------------------------------
+class Suspect : public Character
+{
+protected:
+    WordRow clueRowChar;    // always WORD_2
+    char letterClueChar;    // letter given by this suspect
+    int boardPosChar;       // position of that letter in Word 2
+
+public:
+    Suspect(string name, string role, string nationalityText, char letter, int position);
+
+    char getLetter() const;
+    int getPosition() const;
+    WordRow getRow() const;
+
+    Clue getClue() const override;
+
+    virtual void display() const = 0;   // still pure virtual
+};
+
+
+// ---------------------------------------------------------------------
+//  Class: HouseHelp  (inherits Suspect)
+//  Group of the house workers: Cook, Guard and Servant.
+//  They can be interviewed at ANY time (no credibility needed).
+// ---------------------------------------------------------------------
+class HouseHelp : public Suspect
+{
+public:
+    static const int REQUIRED_CREDIBILITY = 0;
+
+    HouseHelp(string name, string role, string nationalityText, char letter, int position);
+
+    int getRequiredCredibility() const override;
+};
+
+
+// ----- The three House Help members (multi-level inheritance) -----
+// Character -> Suspect -> HouseHelp -> Cook / Guard / Servant
+
+class Cook : public HouseHelp
+{
+public:
+    Cook(string name, string nationalityText, char letter, int position);
+    void display() const override;
+};
+
+class Guard : public HouseHelp
+{
+public:
+    Guard(string name, string nationalityText, char letter, int position);
+    void display() const override;
+};
+
+class Servant : public HouseHelp
+{
+public:
+    Servant(string name, string nationalityText, char letter, int position);
+    void display() const override;
+};
+
+
+// =====================================================================
+//  HELPER FUNCTIONS
 //  An enum is stored as a number, so these functions convert an enum
 //  value into readable text that we can show on the screen.
 // =====================================================================

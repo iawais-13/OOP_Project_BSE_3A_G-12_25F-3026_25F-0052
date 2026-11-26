@@ -241,3 +241,299 @@ string FileCorruptedException::getErrorType() const
 {
     return "File Corrupted";
 }
+
+
+// =====================================================================
+//  MODULE 3 : CHARACTER HIERARCHY  (Part A)
+// =====================================================================
+
+// ---------------- Class: Character ----------------
+
+// Constructor: saves the common data. Nobody is the culprit at the start;
+// the GameEngine will select the culprit later.
+Character::Character(string name, string role, string nationalityText)
+{
+    characterName = name;
+    characterRole = role;
+    nationality = nationalityText;
+    isCulprit = false;
+}
+
+// Virtual destructor (no heap memory in Character itself)
+Character::~Character()
+{
+}
+
+// Prints the common details. Used by every child's display().
+void Character::displayBasicInfo() const
+{
+    cout << "Name        : " << characterName << endl;
+    cout << "Role        : " << characterRole << endl;
+    cout << "Nationality : " << nationality << endl;
+}
+
+string Character::getName() const
+{
+    return characterName;
+}
+
+string Character::getRole() const
+{
+    return characterRole;
+}
+
+string Character::getNationality() const
+{
+    return nationality;
+}
+
+bool Character::getIsCulprit() const
+{
+    return isCulprit;
+}
+
+void Character::setName(string name)
+{
+    characterName = name;
+}
+
+void Character::setNationality(string nationalityText)
+{
+    nationality = nationalityText;
+}
+
+// Base version: no condition (0). Child classes override this.
+int Character::getRequiredCredibility() const
+{
+    return 0;
+}
+
+// Checks the condition with the help of the virtual function above.
+// The correct child version of getRequiredCredibility() is called at runtime.
+bool Character::canBeInterviewed(int credibility) const
+{
+    return credibility >= getRequiredCredibility();
+}
+
+// Base version: returns an empty clue (used by the Detective)
+Clue Character::getClue() const
+{
+    Clue emptyClue;
+    return emptyClue;
+}
+
+
+// ---------------- Class: Victim ----------------
+
+// The role is always "Victim" and the letter always belongs to Word 2
+Victim::Victim(string name, string nationalityText, char letter, int position)
+    : Character(name, "Victim", nationalityText)
+{
+    clueRowChar = WORD_2;
+    letterClueChar = letter;
+    boardPosChar = position;
+}
+
+char Victim::getLetter() const
+{
+    return letterClueChar;
+}
+
+int Victim::getPosition() const
+{
+    return boardPosChar;
+}
+
+WordRow Victim::getRow() const
+{
+    return clueRowChar;
+}
+
+// Packs the letter, position and row into a Clue (the carrier)
+Clue Victim::getClue() const
+{
+    Clue victimClue;
+    victimClue.clueLetter = letterClueChar;
+    victimClue.cluePosition = boardPosChar;
+    victimClue.clueRow = clueRowChar;
+    return victimClue;
+}
+
+int Victim::getRequiredCredibility() const
+{
+    return REQUIRED_CREDIBILITY;   // 80
+}
+
+void Victim::display() const
+{
+    cout << "------ Victim (Business Owner) ------" << endl;
+    displayBasicInfo();
+    cout << "Note        : Owner of the robbed locker. Not a suspect." << endl;
+    cout << "Interview   : Needs credibility >= " << REQUIRED_CREDIBILITY << endl;
+}
+
+
+// ---------------- Class: Detective ----------------
+
+// The detective's role is "Detective" and default nationality is "Malay"
+Detective::Detective(string name, int startingCredibility)
+    : Character(name, "Detective", "Malay")
+{
+    credibility = startingCredibility;
+    turns = 0;
+    solvedWords = "";
+}
+
+// Nothing on the heap yet. In Module 5 the racks will be added and this
+// destructor will make sure their memory is freed.
+Detective::~Detective()
+{
+}
+
+int Detective::getCredibility() const
+{
+    return credibility;
+}
+
+int Detective::getTurns() const
+{
+    return turns;
+}
+
+string Detective::getSolvedWords() const
+{
+    return solvedWords;
+}
+
+// GameEngine counts the turns and stores the new value here
+void Detective::setTurns(int turnCount)
+{
+    turns = turnCount;
+}
+
+// Reduces credibility after a wrong step. It never becomes negative.
+void Detective::loseCredibility(int amount)
+{
+    credibility = credibility - amount;
+
+    if (credibility < 0)
+    {
+        credibility = 0;
+    }
+}
+
+// Adds a correctly solved word, separated by a space
+void Detective::addSolvedWord(string word)
+{
+    if (solvedWords == "")
+    {
+        solvedWords = word;
+    }
+    else
+    {
+        solvedWords = solvedWords + " " + word;
+    }
+}
+
+void Detective::display() const
+{
+    cout << "------ Detective (Player) ------" << endl;
+    displayBasicInfo();
+    cout << "Credibility : " << credibility << endl;
+    cout << "Turns used  : " << turns << endl;
+    cout << "Solved words: " << (solvedWords == "" ? "(none yet)" : solvedWords) << endl;
+}
+
+
+// ---------------- Class: Suspect ----------------
+
+Suspect::Suspect(string name, string role, string nationalityText, char letter, int position)
+    : Character(name, role, nationalityText)
+{
+    clueRowChar = WORD_2;
+    letterClueChar = letter;
+    boardPosChar = position;
+}
+
+char Suspect::getLetter() const
+{
+    return letterClueChar;
+}
+
+int Suspect::getPosition() const
+{
+    return boardPosChar;
+}
+
+WordRow Suspect::getRow() const
+{
+    return clueRowChar;
+}
+
+// Packs the suspect's letter into a Clue (the carrier)
+Clue Suspect::getClue() const
+{
+    Clue suspectClue;
+    suspectClue.clueLetter = letterClueChar;
+    suspectClue.cluePosition = boardPosChar;
+    suspectClue.clueRow = clueRowChar;
+    return suspectClue;
+}
+
+
+// ---------------- Class: HouseHelp ----------------
+
+HouseHelp::HouseHelp(string name, string role, string nationalityText, char letter, int position)
+    : Suspect(name, role, nationalityText, letter, position)
+{
+}
+
+// House Help can be interviewed at any time
+int HouseHelp::getRequiredCredibility() const
+{
+    return REQUIRED_CREDIBILITY;   // 0
+}
+
+
+// ---------------- Classes: Cook, Guard, Servant ----------------
+// Each constructor fixes its own role name and passes the rest to HouseHelp.
+// Each class writes its OWN display() (method overriding).
+
+Cook::Cook(string name, string nationalityText, char letter, int position)
+    : HouseHelp(name, "Cook", nationalityText, letter, position)
+{
+}
+
+void Cook::display() const
+{
+    cout << "------ House Help : Cook ------" << endl;
+    displayBasicInfo();
+    cout << "Note        : Prepared the food for the party." << endl;
+    cout << "Interview   : Allowed at any time" << endl;
+}
+
+Guard::Guard(string name, string nationalityText, char letter, int position)
+    : HouseHelp(name, "Guard", nationalityText, letter, position)
+{
+}
+
+void Guard::display() const
+{
+    cout << "------ House Help : Guard ------" << endl;
+    displayBasicInfo();
+    cout << "Note        : Was guarding the cottage gate." << endl;
+    cout << "Interview   : Allowed at any time" << endl;
+}
+
+Servant::Servant(string name, string nationalityText, char letter, int position)
+    : HouseHelp(name, "Servant", nationalityText, letter, position)
+{
+}
+
+void Servant::display() const
+{
+    cout << "------ House Help : Servant ------" << endl;
+    displayBasicInfo();
+    cout << "Note        : Served the guests in every room." << endl;
+    cout << "Interview   : Allowed at any time" << endl;
+}
