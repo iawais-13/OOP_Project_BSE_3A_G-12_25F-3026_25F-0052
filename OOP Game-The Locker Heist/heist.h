@@ -104,6 +104,141 @@ struct Location
 
 
 // =====================================================================
+//  MODULE 7 : EXCEPTION HANDLING
+// ---------------------------------------------------------------------
+//  An exception is an error that happens while the program is running
+//  (wrong input, full rack, missing file ...). Instead of crashing, we
+//  THROW an exception object and CATCH it somewhere else, show a
+//  message and let the game continue safely.
+//
+//  GameException is the BASE class of all our game errors. Every
+//  special error is a DERIVED class of it. Because of this, one
+//  catch block  "catch (GameException& error)"  can catch ALL of them.
+// =====================================================================
+
+// Base class for every error of the game
+class GameException
+{
+protected:
+    string message;     // details of what went wrong
+
+public:
+    GameException(string errorMessage = "Something went wrong in the game.");
+
+    // Returns the details of the error
+    string getMessage() const;
+
+    // Returns the name (type) of the error.
+    // It is VIRTUAL, so every derived class gives its own name and the
+    // correct version is chosen at runtime (polymorphism).
+    virtual string getErrorType() const;
+
+    // Returns type + message together, ready to print on screen
+    string getFullMessage() const;
+
+    // Virtual destructor so derived exception objects are destroyed properly
+    virtual ~GameException();
+};
+
+// Thrown when the user types something wrong
+// (e.g. menu choice 9, letters instead of a number, name with a space)
+class InvalidInputException : public GameException
+{
+public:
+    InvalidInputException(string details);
+    string getErrorType() const override;
+};
+
+// Thrown when a position (or menu number) is outside the allowed range
+class InvalidPositionException : public GameException
+{
+public:
+    InvalidPositionException(int position, int maxPosition);
+    string getErrorType() const override;
+};
+
+// Thrown when a letter is placed on a board slot that is already filled
+class SlotFilledException : public GameException
+{
+public:
+    SlotFilledException(int position);
+    string getErrorType() const override;
+};
+
+// Thrown when the detective tries to form a word but the row is not full yet
+class WordIncompleteException : public GameException
+{
+public:
+    WordIncompleteException(WordRow row);
+    string getErrorType() const override;
+};
+
+// Thrown when a letter is added to a word (row) that is already complete
+class WordCompleteException : public GameException
+{
+public:
+    WordCompleteException(WordRow row);
+    string getErrorType() const override;
+};
+
+// Thrown when the detective types a wrong word
+class InvalidWordException : public GameException
+{
+public:
+    InvalidWordException(string typedWord);
+    string getErrorType() const override;
+};
+
+// Thrown when a letter is added to a TileRack that has no space left
+class RackFullException : public GameException
+{
+public:
+    RackFullException();
+    string getErrorType() const override;
+};
+
+// Thrown when we try to take a letter out of an empty TileRack
+class RackEmptyException : public GameException
+{
+public:
+    RackEmptyException();
+    string getErrorType() const override;
+};
+
+// Thrown when the same clue (letter) is collected a second time
+class AlreadyVisitedException : public GameException
+{
+public:
+    AlreadyVisitedException(string placeOrPerson);
+    string getErrorType() const override;
+};
+
+// Thrown when the detective's credibility is too low for an interview
+class InterviewDeniedException : public GameException
+{
+public:
+    InterviewDeniedException(string personName, int requiredCredibility);
+    string getErrorType() const override;
+};
+
+// Thrown when a .txt file cannot be opened
+class FileNotFoundException : public GameException
+{
+public:
+    FileNotFoundException(string fileName);
+    string getErrorType() const override;
+};
+
+// Thrown when a .txt file is opened but its data is in a wrong format
+class FileCorruptedException : public GameException
+{
+public:
+    FileCorruptedException(string fileName, string details);
+    string getErrorType() const override;
+};
+
+
+// =====================================================================
 //  HELPER FUNCTIONS (for enums)
 //  An enum is stored as a number, so these functions convert an enum
 //  value into readable text that we can show on the screen.
