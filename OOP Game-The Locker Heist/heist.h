@@ -258,7 +258,7 @@ public:
 //              └── Servant
 //
 //  BusinessRelations, CloseRelations, Partner, OwnerChild and PA
-//  (the diamond problem) will be added in Part B.
+//  (the diamond problem) are added in Part B (see below).
 // =====================================================================
 
 // ---------------------------------------------------------------------
@@ -435,6 +435,117 @@ class Servant : public HouseHelp
 {
 public:
     Servant(string name, string nationalityText, char letter, int position);
+    void display() const override;
+};
+
+
+// =====================================================================
+//  MODULE 3 : CHARACTER HIERARCHY  (Part B)
+// ---------------------------------------------------------------------
+//  Classes made in Part B:
+//
+//      Suspect
+//      ├── BusinessRelations   (virtual)
+//      │   ├── Partner         (Partner 1, Partner 2)
+//      │   └── PA  ──┐
+//      └── CloseRelations      (virtual)
+//          ├── OwnerChild    │
+//          └── PA  ──────────┘   <- PA inherits from BOTH groups
+//
+//  THE DIAMOND PROBLEM:
+//  PA inherits from BusinessRelations AND CloseRelations, and both of
+//  them inherit from Suspect. With normal inheritance, PA would get
+//  TWO copies of Suspect (two names, two letters ...) and the compiler
+//  would not know which one to use.
+//
+//  SOLUTION: VIRTUAL INHERITANCE.
+//  BusinessRelations and CloseRelations inherit Suspect as "virtual",
+//  so PA gets only ONE shared copy of Suspect (and of Character).
+// =====================================================================
+
+// ---------------------------------------------------------------------
+//  Class: BusinessRelations  (inherits Suspect VIRTUALLY)
+//  Group of people related to the owner's business: Partners and PA.
+//  Default condition for this group: credibility >= 50.
+// ---------------------------------------------------------------------
+class BusinessRelations : virtual public Suspect
+{
+public:
+    static const int REQUIRED_CREDIBILITY = 50;
+
+    // No Suspect data is passed here: Suspect is a VIRTUAL base class,
+    // so it is always built by the last class (Partner or PA).
+    BusinessRelations();
+
+    int getRequiredCredibility() const override;
+};
+
+
+// ---------------------------------------------------------------------
+//  Class: CloseRelations  (inherits Suspect VIRTUALLY)
+//  Group of people close to the owner: Owner's Child and PA.
+//  Default condition for this group: credibility >= 75.
+// ---------------------------------------------------------------------
+class CloseRelations : virtual public Suspect
+{
+public:
+    static const int REQUIRED_CREDIBILITY = 75;
+
+    // No Suspect data is passed here (same reason as BusinessRelations)
+    CloseRelations();
+
+    int getRequiredCredibility() const override;
+};
+
+
+// ---------------------------------------------------------------------
+//  Class: Partner  (inherits BusinessRelations)
+//  Business Partner 1 and Business Partner 2 are both objects of this
+//  class. Only their data (name, role, letter ...) is different.
+//  Interview condition: credibility >= 50 (taken from BusinessRelations).
+// ---------------------------------------------------------------------
+class Partner : public BusinessRelations
+{
+public:
+    Partner(string name, string role, string nationalityText, char letter, int position);
+    void display() const override;
+};
+
+
+// ---------------------------------------------------------------------
+//  Class: OwnerChild  (inherits CloseRelations)
+//  The owner's teenage child (aged 15-19), panicked after the theft.
+//  Interview condition: credibility >= 75 (taken from CloseRelations).
+// ---------------------------------------------------------------------
+class OwnerChild : public CloseRelations
+{
+public:
+    OwnerChild(string name, string nationalityText, char letter, int position);
+    void display() const override;
+};
+
+
+// ---------------------------------------------------------------------
+//  Class: PA  (inherits BusinessRelations AND CloseRelations)
+//  MULTIPLE INHERITANCE. The PA is the owner's right-hand and bestie,
+//  so he is a business relation and a close relation at the same time.
+//
+//  Two important rules of the diamond:
+//  1. PA's constructor must call the Suspect constructor ITSELF,
+//     because Suspect is a virtual base class.
+//  2. PA MUST override getRequiredCredibility(), because both parents
+//     give a different version (50 and 75) and the compiler cannot
+//     choose one by itself.
+//  Interview condition: credibility >= 35.
+// ---------------------------------------------------------------------
+class PA : public BusinessRelations, public CloseRelations
+{
+public:
+    static const int REQUIRED_CREDIBILITY = 35;
+
+    PA(string name, string nationalityText, char letter, int position);
+
+    int getRequiredCredibility() const override;
     void display() const override;
 };
 

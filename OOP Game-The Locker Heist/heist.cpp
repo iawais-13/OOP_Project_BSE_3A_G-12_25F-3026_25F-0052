@@ -537,3 +537,102 @@ void Servant::display() const
     cout << "Note        : Served the guests in every room." << endl;
     cout << "Interview   : Allowed at any time" << endl;
 }
+
+
+// =====================================================================
+//  MODULE 3 : CHARACTER HIERARCHY  (Part B)
+// ---------------------------------------------------------------------
+//  IMPORTANT RULE OF VIRTUAL INHERITANCE:
+//  A virtual base class (Suspect) is always built by the LAST class in
+//  the chain (the object we actually create: Partner, OwnerChild or PA).
+//  That is why Partner, OwnerChild and PA call Suspect(...) directly,
+//  and the middle classes (BusinessRelations, CloseRelations) do not.
+// =====================================================================
+
+// ---------------- Class: BusinessRelations ----------------
+
+// Empty: the shared Suspect part is built by Partner or PA
+BusinessRelations::BusinessRelations()
+{
+}
+
+int BusinessRelations::getRequiredCredibility() const
+{
+    return REQUIRED_CREDIBILITY;   // 50
+}
+
+
+// ---------------- Class: CloseRelations ----------------
+
+// Empty: the shared Suspect part is built by OwnerChild or PA
+CloseRelations::CloseRelations()
+{
+}
+
+int CloseRelations::getRequiredCredibility() const
+{
+    return REQUIRED_CREDIBILITY;   // 75
+}
+
+
+// ---------------- Class: Partner ----------------
+// Suspect(...) is called here because it is a virtual base class.
+
+Partner::Partner(string name, string role, string nationalityText, char letter, int position)
+    : Suspect(name, role, nationalityText, letter, position),
+    BusinessRelations()
+{
+}
+
+void Partner::display() const
+{
+    cout << "------ Business Relation : " << characterRole << " ------" << endl;
+    displayBasicInfo();
+    cout << "Note        : Owns a share in the owner's business." << endl;
+    cout << "Interview   : Needs credibility >= " << getRequiredCredibility() << endl;
+}
+
+
+// ---------------- Class: OwnerChild ----------------
+
+OwnerChild::OwnerChild(string name, string nationalityText, char letter, int position)
+    : Suspect(name, "Child", nationalityText, letter, position),
+    CloseRelations()
+{
+}
+
+void OwnerChild::display() const
+{
+    cout << "------ Close Relation : Owner's Child ------" << endl;
+    displayBasicInfo();
+    cout << "Note        : A teenager (15-19), panicked after the theft." << endl;
+    cout << "Interview   : Needs credibility >= " << getRequiredCredibility() << endl;
+}
+
+
+// ---------------- Class: PA (the diamond) ----------------
+// PA builds the ONE shared Suspect part itself, and then its two
+// parents. Because of virtual inheritance, Suspect is created only once.
+
+PA::PA(string name, string nationalityText, char letter, int position)
+    : Suspect(name, "PA", nationalityText, letter, position),
+    BusinessRelations(),
+    CloseRelations()
+{
+}
+
+// PA has its own condition (35). Without this function the program
+// would not compile, because PA gets two different versions (50 and 75)
+// from its two parents.
+int PA::getRequiredCredibility() const
+{
+    return REQUIRED_CREDIBILITY;   // 35
+}
+
+void PA::display() const
+{
+    cout << "------ Business + Close Relation : PA ------" << endl;
+    displayBasicInfo();
+    cout << "Note        : Right-hand of the owner, knows all his secrets." << endl;
+    cout << "Interview   : Needs credibility >= " << REQUIRED_CREDIBILITY << endl;
+}
