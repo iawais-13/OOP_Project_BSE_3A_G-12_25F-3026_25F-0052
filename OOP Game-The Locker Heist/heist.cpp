@@ -636,3 +636,193 @@ void PA::display() const
     cout << "Note        : Right-hand of the owner, knows all his secrets." << endl;
     cout << "Interview   : Needs credibility >= " << REQUIRED_CREDIBILITY << endl;
 }
+
+
+// =====================================================================
+//  HELPER FUNCTION : replaceUnderscores
+//  Goes through the text letter by letter and puts a space wherever
+//  it finds an underscore. "Bedroom_1" -> "Bedroom 1"
+// =====================================================================
+string replaceUnderscores(string text)
+{
+    for (int i = 0; i < (int)text.length(); i++)
+    {
+        if (text[i] == '_')
+        {
+            text[i] = ' ';
+        }
+    }
+    return text;
+}
+
+
+// =====================================================================
+//  MODULE 4 : GAME BOARDS (DMA)  -  Part A : Cottage
+// =====================================================================
+
+// Constructor: creates the array of 7 pointers, and then one empty
+// Location on the heap for every pointer.
+Cottage::Cottage()
+{
+    locations = new Location * [TOTAL_LOCATIONS];
+
+    for (int i = 0; i < TOTAL_LOCATIONS; i++)
+    {
+        locations[i] = new Location;
+    }
+}
+
+// Copy constructor: "Cottage copy = original;"
+// It must NOT share memory with the original, so we make a deep copy.
+Cottage::Cottage(const Cottage& other)
+{
+    copyLocationsFrom(other);
+}
+
+// Assignment operator: "copy = original;" (both objects already exist)
+Cottage& Cottage::operator=(const Cottage& other)
+{
+    // Self-assignment check: "cottage = cottage;" must not delete itself
+    if (this != &other)
+    {
+        freeMemory();                 // 1. free the old memory
+        copyLocationsFrom(other);     // 2. make a deep copy of the other one
+    }
+    return *this;                     // 3. allows chaining: a = b = c;
+}
+
+// Destructor: called automatically when a Cottage object is destroyed
+Cottage::~Cottage()
+{
+    freeMemory();
+}
+
+// DEEP COPY: creates NEW memory and copies the VALUES into it.
+// (A shallow copy would only copy the pointer, and then both cottages
+// would point to the same memory -> deleting one would break the other.)
+void Cottage::copyLocationsFrom(const Cottage& other)
+{
+    locations = new Location * [TOTAL_LOCATIONS];
+
+    for (int i = 0; i < TOTAL_LOCATIONS; i++)
+    {
+        // new Location filled with a copy of the other location's data
+        locations[i] = new Location(*other.locations[i]);
+    }
+}
+
+// Deletes each location first, then the array of pointers itself
+void Cottage::freeMemory()
+{
+    if (locations != nullptr)
+    {
+        for (int i = 0; i < TOTAL_LOCATIONS; i++)
+        {
+            delete locations[i];
+            locations[i] = nullptr;
+        }
+
+        delete[] locations;
+        locations = nullptr;   // no dangling pointer
+    }
+}
+
+// The player uses numbers 1 to 7. Anything else is an invalid position.
+void Cottage::checkLocationNumber(int number) const
+{
+    if (number < 1 || number > TOTAL_LOCATIONS)
+    {
+        throw InvalidPositionException(number, TOTAL_LOCATIONS);
+    }
+}
+
+// Fills a location. Number 1 is stored at index 0, and so on.
+void Cottage::setLocation(int number, string name, char letter, int position)
+{
+    checkLocationNumber(number);
+
+    Location* place = locations[number - 1];
+    place->locName = name;
+    place->letterClueLoc = letter;
+    place->boardPosLoc = position;
+    place->locRow = WORD_1;
+    place->locSearchFlag = false;
+}
+
+// Searches a location: marks it as searched and gives back its clue.
+// Searching again is allowed (the player sees the same letter again).
+Clue Cottage::searchLocation(int number)
+{
+    checkLocationNumber(number);
+
+    Location* place = locations[number - 1];
+    place->locSearchFlag = true;
+
+    // Clue is the carrier that takes the letter to the Scrabble board
+    Clue foundClue;
+    foundClue.clueLetter = place->letterClueLoc;
+    foundClue.cluePosition = place->boardPosLoc;
+    foundClue.clueRow = place->locRow;
+    return foundClue;
+}
+
+bool Cottage::isSearched(int number) const
+{
+    checkLocationNumber(number);
+    return locations[number - 1]->locSearchFlag;
+}
+
+string Cottage::getLocationName(int number) const
+{
+    checkLocationNumber(number);
+    return locations[number - 1]->locName;
+}
+
+int Cottage::getLocationCount() const
+{
+    return TOTAL_LOCATIONS;
+}
+
+// Counts how many locations have been searched so far
+int Cottage::getSearchedCount() const
+{
+    int count = 0;
+    for (int i = 0; i < TOTAL_LOCATIONS; i++)
+    {
+        if (locations[i]->locSearchFlag == true)
+        {
+            count++;
+        }
+    }
+    return count;
+}
+
+// Prints the location menu, e.g.  [3] Study Room  - NOT Searched
+void Cottage::displayLocations() const
+{
+    cout << "====== Location Menu ======" << endl;
+
+    for (int i = 0; i < TOTAL_LOCATIONS; i++)
+    {
+        string nameToShow = replaceUnderscores(locations[i]->locName);
+
+        cout << "[" << (i + 1) << "] " << nameToShow;
+
+        // spaces so that the status column lines up
+        for (int space = (int)nameToShow.length(); space < 13; space++)
+        {
+            cout << " ";
+        }
+
+        if (locations[i]->locSearchFlag)
+        {
+            cout << "- Searched" << endl;
+        }
+        else
+        {
+            cout << "- NOT Searched" << endl;
+        }
+    }
+
+    cout << "===========================" << endl;
+}

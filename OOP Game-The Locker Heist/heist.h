@@ -551,6 +551,65 @@ public:
 
 
 // =====================================================================
+//  MODULE 4 : GAME BOARDS (DMA)  -  Part A : Cottage
+// ---------------------------------------------------------------------
+//  DMA (Dynamic Memory Allocation) means creating memory at RUNTIME
+//  with "new" and freeing it ourselves with "delete". This memory is
+//  on the HEAP, so we must be careful: every "new" needs one "delete",
+//  otherwise we get a memory leak.
+// =====================================================================
+
+// ---------------------------------------------------------------------
+//  Class: Cottage
+//  Holds and manages the 7 locations of the cottage (for Word 1).
+//  All locations can be visited at any time (no conditions).
+//
+//  AGGREGATION (Cottage <>--- Location):
+//  The cottage "has" locations. A Location is a separate struct that
+//  is created from the data of locations.txt and can exist on its own,
+//  the Cottage only keeps and manages them.
+//
+//  Memory design: an array of POINTERS, and every pointer points to one
+//  Location on the heap. So the destructor first deletes each location
+//  and then deletes the array itself.
+// ---------------------------------------------------------------------
+class Cottage
+{
+private:
+    Location** locations;   // dynamic array of 7 Location pointers
+
+    // Small private helpers, used by the constructors and operator=
+    void copyLocationsFrom(const Cottage& other);   // makes a DEEP copy
+    void freeMemory();                              // deletes everything
+    void checkLocationNumber(int number) const;     // throws if not 1-7
+
+public:
+    // static const: the cottage always has 7 locations
+    static const int TOTAL_LOCATIONS = 7;
+
+    Cottage();                                   // creates 7 empty locations
+    Cottage(const Cottage& other);               // copy constructor (deep copy)
+    Cottage& operator=(const Cottage& other);    // assignment operator (deep copy)
+    ~Cottage();                                  // frees all heap memory
+
+    // Fills one location (number 1 to 7) with data from locations.txt
+    void setLocation(int number, string name, char letter, int position);
+
+    // Marks the location as searched and returns its clue (letter + position)
+    Clue searchLocation(int number);
+
+    // ----- Getters -----
+    bool isSearched(int number) const;
+    string getLocationName(int number) const;
+    int getLocationCount() const;
+    int getSearchedCount() const;
+
+    // Shows all 7 locations with their search status
+    void displayLocations() const;
+};
+
+
+// =====================================================================
 //  HELPER FUNCTIONS
 //  An enum is stored as a number, so these functions convert an enum
 //  value into readable text that we can show on the screen.
@@ -558,5 +617,8 @@ public:
 string wordRowToText(WordRow row);
 string gameStateToText(GameState state);
 string menuChoiceToText(MenuChoice choice);
+
+// String manipulation: changes "Study_Room" into "Study Room" for display
+string replaceUnderscores(string text);
 
 #endif // HEIST_H
