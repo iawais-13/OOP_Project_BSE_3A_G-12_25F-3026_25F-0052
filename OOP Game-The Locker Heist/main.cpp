@@ -2,164 +2,138 @@
 //  File      : main.cpp
 //  Project   : THE LOCKER HEIST - A Detective Game backed by OOP Principles
 //  Purpose   : This is the DRIVER file. Later it will only start the
-//              GameEngine. For now (Module 8) it is used to TEST the
-//              DynamicArray<T> template, and to check that Cottage,
-//              Scrabble and TileRack still work after using it.
+//              GameEngine. For now (Module 11) it is used to TEST the
+//              overloaded operators (==, !=, +, <<, >>) and friends.
 // =====================================================================
 
 #include "heist.h"
 
+// ---------------------------------------------------------------------
+//  TEST HELPER : makes a Clue in one line
+// ---------------------------------------------------------------------
+Clue makeClue(char letter, int position, WordRow row)
+{
+    Clue newClue;
+    newClue.clueLetter = letter;
+    newClue.cluePosition = position;
+    newClue.clueRow = row;
+    return newClue;
+}
+
+
 int main()
 {
     cout << "==================================================" << endl;
-    cout << "     THE LOCKER HEIST - MODULE 8 TEST             " << endl;
+    cout << "     THE LOCKER HEIST - MODULE 11 TEST            " << endl;
     cout << "==================================================" << endl;
 
     // ------------------------------------------------------------
-    // TEST 1 : ONE template, THREE different types
+    // TEST 1 : == and != on tiles (comparing letters with clue.txt)
     // ------------------------------------------------------------
-    cout << "\n--- TEST 1 : Same template, different types ---" << endl;
+    cout << "\n--- TEST 1 : Tile == and != ---" << endl;
+    Tile tileA;
+    tileA.tileLetter = 'G';
+    Tile tileB;
+    tileB.tileLetter = 'G';
+    Tile tileC;
+    tileC.tileLetter = 'E';
 
-    DynamicArray<int> turnNumbers(5);            // array of int
-    for (int i = 0; i < turnNumbers.getSize(); i++)
-    {
-        turnNumbers[i] = (i + 1) * 5;
-    }
-    cout << "DynamicArray<int>      : ";
-    for (int i = 0; i < turnNumbers.getSize(); i++)
-    {
-        cout << turnNumbers[i] << " ";
-    }
-    cout << endl;
+    cout << tileA << " == " << tileB << " ? " << (tileA == tileB ? "Yes" : "No") << endl;
+    cout << tileA << " == " << tileC << " ? " << (tileA == tileC ? "Yes" : "No") << endl;
+    cout << tileA << " != " << tileC << " ? " << (tileA != tileC ? "Yes" : "No") << endl;
 
-    DynamicArray<string> names(3);               // array of string
-    names[0] = "Mr.Enzo";
-    names[1] = "Mr.Lukas";
-    names[2] = "Mr.Toby";
-    cout << "DynamicArray<string>   : ";
-    for (int i = 0; i < names.getSize(); i++)
-    {
-        cout << names[i] << " ";
-    }
-    cout << endl;
-
-    DynamicArray<Location> places(2);            // array of our own struct
-    places[0].locName = "Garden";
-    places[1].locName = "Kitchen";
-    cout << "DynamicArray<Location> : " << places[0].locName << " "
-        << places[1].locName << endl;
-
-    // ------------------------------------------------------------
-    // TEST 2 : The index is checked -> no going outside the array
-    // ------------------------------------------------------------
-    cout << "\n--- TEST 2 : Wrong index ---" << endl;
-    try
-    {
-        cout << turnNumbers[10] << endl;         // only 5 elements
-    }
-    catch (GameException& error)
-    {
-        cout << error.getFullMessage() << endl;
-    }
-
-    // ------------------------------------------------------------
-    // TEST 3 : Deep copy of the template itself
-    // ------------------------------------------------------------
-    cout << "\n--- TEST 3 : Deep copy of DynamicArray ---" << endl;
-    DynamicArray<string> copiedNames = names;    // copy constructor
-    copiedNames[0] = "CHANGED";
-
-    DynamicArray<string> assignedNames;
-    assignedNames = names;                       // assignment operator
-    assignedNames[1] = "ALSO_CHANGED";
-
-    cout << "COPY     : " << copiedNames[0] << " " << copiedNames[1] << endl;
-    cout << "ASSIGNED : " << assignedNames[0] << " " << assignedNames[1] << endl;
-    cout << "ORIGINAL : " << names[0] << " " << names[1] << "  (original is safe)" << endl;
-
-    // ------------------------------------------------------------
-    // TEST 4 : Cottage, Scrabble and TileRack now use the template.
-    // We run the complete clue flow again; the result must be the
-    // same as in Module 5 (GERMANS on the board).
-    // ------------------------------------------------------------
-    cout << "\n--- TEST 4 : Classes after the template refactor ---" << endl;
-
-    Cottage cottage;
-    cottage.setLocation(1, "Bedroom_1", 'G', 1);
-    cottage.setLocation(2, "Bedroom_2", 'E', 2);
-    cottage.setLocation(3, "Study_Room", 'R', 3);
-    cottage.setLocation(4, "Garden", 'M', 4);
-    cottage.setLocation(5, "Kitchen", 'A', 5);
-    cottage.setLocation(6, "Dining_Room", 'N', 6);
-    cottage.setLocation(7, "Living_Room", 'S', 7);
-
-    Detective player("Agent_Halim", 100);
+    // The word check of Scrabble now uses the Tile operators
     Scrabble scrabble;
     scrabble.setTargetWords("GERMANS", "SHEPHERD");
-
-    for (int number = 1; number <= cottage.getLocationCount(); number++)
+    char word1Letters[7] = { 'G', 'E', 'R', 'M', 'A', 'N', 'S' };
+    for (int i = 0; i < 7; i++)
     {
-        Clue foundClue = cottage.searchLocation(number);
-        player.collectClue(foundClue);
-        scrabble.placeLetter(foundClue);
+        scrabble.placeLetter(makeClue(word1Letters[i], i + 1, WORD_1));
+    }
+    cout << "Typed \"germans\" -> " << (scrabble.isWordCorrect(WORD_1, "germans") ? "Correct" : "Wrong") << endl;
+    cout << "Typed \"GERMENS\" -> " << (scrabble.isWordCorrect(WORD_1, "GERMENS") ? "Correct" : "Wrong") << endl;
+
+    // ------------------------------------------------------------
+    // TEST 2 : << for Tile, Location, Character and Scrabble
+    // ------------------------------------------------------------
+    cout << "\n--- TEST 2 : The << operator ---" << endl;
+
+    Location diningRoom;
+    diningRoom.locName = "Dining_Room";
+    diningRoom.letterClueLoc = 'N';
+    diningRoom.boardPosLoc = 6;
+    cout << "Location  : " << diningRoom << endl;
+
+    cout << "Scrabble  : " << endl << scrabble;
+
+    // A Character pointer pointing to a PA object.
+    // cout << *person runs the PA version of display() (polymorphism).
+    Character* person = new PA("Mr.Jad", "Egyptian", 'D', 8);
+    cout << "Character : " << endl << *person;
+
+    // ------------------------------------------------------------
+    // TEST 3 : + on TileRack -> the final clue
+    // ------------------------------------------------------------
+    cout << "\n--- TEST 3 : rack1 + rack2 ---" << endl;
+    TileRack word1Rack(7);
+    TileRack word2Rack(8);
+
+    char word2Letters[8] = { 'S', 'H', 'E', 'P', 'H', 'E', 'R', 'D' };
+    // add the letters in a mixed order, like a real game
+    int order1[7] = { 5, 3, 1, 7, 2, 6, 4 };
+    int order2[8] = { 8, 1, 4, 2, 6, 3, 7, 5 };
+    for (int i = 0; i < 7; i++)
+    {
+        int position = order1[i];
+        word1Rack.addTile(makeClue(word1Letters[position - 1], position, WORD_1));
+    }
+    for (int i = 0; i < 8; i++)
+    {
+        int position = order2[i];
+        word2Rack.addTile(makeClue(word2Letters[position - 1], position, WORD_2));
     }
 
-    Victim owner("Mr.Leonardo", "French", 'S', 1);
-    player.collectClue(owner.getClue());
-    scrabble.placeLetter(owner.getClue());
+    TileRack finalClueRack = word1Rack + word2Rack;    // operator+
 
-    player.displayRacks();
-    scrabble.displayBoard();
-    cottage.displayLocations();
-
-    // ------------------------------------------------------------
-    // TEST 5 : Deep copy still works for the three classes
-    // ------------------------------------------------------------
-    cout << "\n--- TEST 5 : Deep copy of the refactored classes ---" << endl;
-
-    Cottage copiedCottage = cottage;
-    copiedCottage.setLocation(1, "Changed_Room", 'X', 1);
-    cout << "Cottage  -> copy: " << copiedCottage.getLocationName(1)
-        << " | original: " << cottage.getLocationName(1) << endl;
-
-    Scrabble copiedBoard = scrabble;
-    Clue cookClue;
-    cookClue.clueLetter = 'H';
-    cookClue.cluePosition = 2;
-    cookClue.clueRow = WORD_2;
-    copiedBoard.placeLetter(cookClue);
-    cout << "Scrabble -> copy: " << copiedBoard.getPlacedWord(WORD_2)
-        << " | original: " << scrabble.getPlacedWord(WORD_2) << endl;
-
-    TileRack copiedRack = player.getRack(WORD_2);
-    copiedRack.addTile(cookClue);
-    cout << "TileRack -> copy: " << copiedRack.getLettersByPosition()
-        << " | original: " << player.getRack(WORD_2).getLettersByPosition() << endl;
+    cout << "Rack 1 (collected order): " << word1Rack.getLettersInOrder() << endl;
+    cout << "Rack 2 (collected order): " << word2Rack.getLettersInOrder() << endl;
+    cout << "Rack 1 + Rack 2         : " << finalClueRack.getLettersInOrder() << endl;
+    cout << "Tiles in the final rack : " << finalClueRack.getCount() << " (7 + space + 8)" << endl;
 
     // ------------------------------------------------------------
-    // TEST 6 : The old checks still work (they now come from the classes
-    // AND from DynamicArray's index check)
+    // TEST 4 : >> operators. Please type what is asked.
     // ------------------------------------------------------------
-    cout << "\n--- TEST 6 : Old checks still work ---" << endl;
+    cout << "\n--- TEST 4 : The >> operator (your input) ---" << endl;
+
+    Tile typedTile;
+    cout << "Type one letter (e.g. k): ";
+    cin >> typedTile;
+    cout << "You typed the tile " << typedTile << endl;
+
+    Location typedPlace;
+    cout << "\nType a location as  name letter position  (e.g. Garden m 4): ";
+    cin >> typedPlace;
+    cout << "Location read: " << typedPlace << "  (letter "
+        << typedPlace.letterClueLoc << " at " << typedPlace.boardPosLoc << ")" << endl;
+
+    cout << "\nType a new name and nationality for the PA (e.g. Mr.Omar Saudi): ";
+    cin >> *person;
+    cout << "PA is now: " << person->getName() << " (" << person->getNationality() << ")" << endl;
+
+    cout << "\nPlace a letter on Word 2 as  letter position row  (e.g. h 2 2): ";
     try
     {
-        scrabble.placeLetter(cookClue);          // fine: slot 2 of Word 2 is empty
-        scrabble.placeLetter(cookClue);          // same slot again -> error
+        cin >> scrabble;
+        cout << scrabble;
     }
     catch (GameException& error)
     {
         cout << error.getFullMessage() << endl;
     }
 
-    try
-    {
-        cottage.searchLocation(8);               // only 7 locations
-    }
-    catch (GameException& error)
-    {
-        cout << error.getFullMessage() << endl;
-    }
+    delete person;
+    person = nullptr;
 
-    cout << "\nModule 8 test finished successfully." << endl;
+    cout << "\nModule 11 test finished successfully." << endl;
     return 0;
 }

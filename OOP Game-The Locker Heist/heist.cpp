@@ -879,24 +879,8 @@ void Cottage::displayLocations() const
 
     for (int i = 0; i < TOTAL_LOCATIONS; i++)
     {
-        string nameToShow = replaceUnderscores(locations[i].locName);
-
-        cout << "[" << (i + 1) << "] " << nameToShow;
-
-        // spaces so that the status column lines up
-        for (int space = (int)nameToShow.length(); space < 13; space++)
-        {
-            cout << " ";
-        }
-
-        if (locations[i].locSearchFlag)
-        {
-            cout << "- Searched" << endl;
-        }
-        else
-        {
-            cout << "- NOT Searched" << endl;
-        }
+        // Module 11: the overloaded << of Location prints name and status
+        cout << "[" << (i + 1) << "] " << locations[i] << endl;
     }
 
     cout << "===========================" << endl;
@@ -1174,7 +1158,31 @@ bool Scrabble::isWordCorrect(WordRow row, string typedWord) const
         throw WordIncompleteException(row);
     }
 
-    return toUpperCase(typedWord) == getTargetWord(row);
+    typedWord = toUpperCase(typedWord);
+    string correctWord = getTargetWord(row);
+
+    // Different length -> it cannot be the same word
+    if (typedWord.length() != correctWord.length())
+    {
+        return false;
+    }
+
+    // Module 11: compare letter by letter with the overloaded != of Tile
+    // (each letter of the typed word against the letter from clue.txt)
+    for (int i = 0; i < (int)correctWord.length(); i++)
+    {
+        Tile typedTile;
+        typedTile.tileLetter = typedWord[i];
+
+        Tile correctTile;
+        correctTile.tileLetter = correctWord[i];
+
+        if (typedTile != correctTile)
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 // Prints one row like:  Word 1: [G] [E] [ ] [M] [ ] [ ] [S]
@@ -1184,7 +1192,7 @@ void Scrabble::displayWord(WordRow row) const
 
     for (int i = 0; i < getRowLength(row); i++)
     {
-        cout << "[" << board[row][i].tileLetter << "] ";
+        cout << board[row][i] << " ";     // Module 11: Tile's << prints [G]
     }
 
     if (isRowComplete(row))
@@ -1194,12 +1202,10 @@ void Scrabble::displayWord(WordRow row) const
     cout << endl;
 }
 
-// Prints the whole board (both rows)
+// Prints the whole board (both rows) with the overloaded << of Scrabble
 void Scrabble::displayBoard() const
 {
-    cout << "Scrabble:" << endl;
-    displayWord(WORD_1);
-    displayWord(WORD_2);
+    cout << *this;
 }
 
 
@@ -1456,4 +1462,204 @@ void TileRack::display() const
         cout << "[" << tiles[i].tileLetter << " at " << positions[i] << "] ";
     }
     cout << " (" << count << "/" << capacity << ")" << endl;
+}
+
+
+// =====================================================================
+//  MODULE 11 : OPERATOR OVERLOADING AND FRIEND FUNCTIONS
+// ---------------------------------------------------------------------
+//  OPERATOR OVERLOADING gives a new meaning to a C++ operator (==, +,
+//  <<, >>) for OUR OWN types, so the code reads like normal math:
+//      tile1 == tile2        rack1 + rack2        cout << scrabble
+//
+//  A FRIEND FUNCTION is not a member of the class, but the class allows
+//  it to use its private / protected data.
+//  Why are << and >> friends and not members?  In  "cout << tile"  the
+//  LEFT side is cout (an ostream), not our class. A member operator only
+//  works when our class is on the left side, so these operators are
+//  written outside the class and made friends.
+// =====================================================================
+
+// ---------------- Tile : == and != ----------------
+
+// Two tiles are equal when their letters are the same
+bool Tile::operator==(const Tile& other) const
+{
+    return tileLetter == other.tileLetter;
+}
+
+// "Not equal" simply uses the == operator above
+bool Tile::operator!=(const Tile& other) const
+{
+    return !(*this == other);
+}
+
+// ---------------- Tile : << and >> ----------------
+
+// Prints a tile like  [G]  or  [ ]
+ostream& operator<<(ostream& out, const Tile& tile)
+{
+    out << "[" << tile.tileLetter << "]";
+    return out;      // returning the stream allows: cout << a << b << c;
+}
+
+// Reads one letter into a tile (small letters become capital)
+istream& operator>>(istream& in, Tile& tile)
+{
+    char letter;
+    in >> letter;
+
+    if (letter >= 'a' && letter <= 'z')
+    {
+        letter = letter - 32;
+    }
+
+    tile.tileLetter = letter;
+    tile.filled = true;
+    return in;
+}
+
+// ---------------- Location : << and >> ----------------
+
+// Prints a location like  "Study Room   - NOT Searched"
+ostream& operator<<(ostream& out, const Location& place)
+{
+    string nameToShow = replaceUnderscores(place.locName);
+    out << nameToShow;
+
+    // spaces so that the status column lines up
+    for (int space = (int)nameToShow.length(); space < 13; space++)
+    {
+        out << " ";
+    }
+
+    if (place.locSearchFlag)
+    {
+        out << "- Searched";
+    }
+    else
+    {
+        out << "- NOT Searched";
+    }
+    return out;
+}
+
+// Reads a location as:  name letter position   (e.g.  Garden M 4)
+istream& operator>>(istream& in, Location& place)
+{
+    in >> place.locName >> place.letterClueLoc >> place.boardPosLoc;
+
+    if (place.letterClueLoc >= 'a' && place.letterClueLoc <= 'z')
+    {
+        place.letterClueLoc = place.letterClueLoc - 32;
+    }
+
+    place.locRow = WORD_1;          // locations always give letters for Word 1
+    place.locSearchFlag = false;    // a new location is not searched yet
+    return in;
+}
+
+// ---------------- Character : << and >> ----------------
+
+// Prints any character. display() is VIRTUAL, so for a Cook object the
+// Cook version runs, for a PA object the PA version runs (polymorphism),
+// even though the parameter type is Character&.
+// (display() writes to cout, so this operator is meant to be used with cout.)
+ostream& operator<<(ostream& out, const Character& person)
+{
+    person.display();
+    return out;
+}
+
+// Reads a new name and nationality. Being a friend, this function can
+// change the protected data of Character directly.
+istream& operator>>(istream& in, Character& person)
+{
+    in >> person.characterName >> person.nationality;
+    return in;
+}
+
+// ---------------- TileRack : + ----------------
+
+// Joins two racks into a NEW rack:  letters of this rack (in board order),
+// one space, then the letters of the other rack (in board order).
+// "GERMANS" + "SHEPHERD" -> "GERMANS SHEPHERD" (16 tiles)
+// Neither of the two racks is changed.
+TileRack TileRack::operator+(const TileRack& other) const
+{
+    string fullClue = getLettersByPosition() + " " + other.getLettersByPosition();
+
+    TileRack mergedRack((int)fullClue.length());
+
+    for (int i = 0; i < (int)fullClue.length(); i++)
+    {
+        Clue letterClue;
+        letterClue.clueLetter = fullClue[i];
+        letterClue.cluePosition = i + 1;     // positions 1, 2, 3 ... in the merged clue
+        letterClue.clueRow = WORD_1;         // not used for the merged rack
+        mergedRack.addTile(letterClue);
+    }
+
+    return mergedRack;
+}
+
+// ---------------- Scrabble : << and >> ----------------
+
+// Prints the whole board. As a friend it reads the private board directly.
+ostream& operator<<(ostream& out, const Scrabble& scrabble)
+{
+    out << "Scrabble:" << endl;
+
+    for (int row = WORD_1; row <= WORD_2; row++)
+    {
+        WordRow currentRow = (WordRow)row;
+        out << "  " << wordRowToText(currentRow) << ": ";
+
+        for (int i = 0; i < scrabble.getRowLength(currentRow); i++)
+        {
+            out << scrabble.board[currentRow][i] << " ";   // uses Tile's <<
+        }
+
+        if (scrabble.isRowComplete(currentRow))
+        {
+            out << "-> COMPLETE";
+        }
+        out << endl;
+    }
+    return out;
+}
+
+// Reads a move as:  letter position row   (e.g.  G 1 1)  and places it.
+// All the normal checks of placeLetter() still run (exceptions).
+istream& operator>>(istream& in, Scrabble& scrabble)
+{
+    char letter;
+    int position;
+    int rowNumber;
+    in >> letter >> position >> rowNumber;
+
+    if (in.fail())
+    {
+        in.clear();
+        in.ignore(1000, '\n');
+        throw InvalidInputException("type a letter and two numbers, e.g. G 1 1");
+    }
+
+    if (rowNumber != 1 && rowNumber != 2)
+    {
+        throw InvalidInputException("row must be 1 or 2.");
+    }
+
+    if (letter >= 'a' && letter <= 'z')
+    {
+        letter = letter - 32;
+    }
+
+    Clue newClue;
+    newClue.clueLetter = letter;
+    newClue.cluePosition = position;
+    newClue.clueRow = (rowNumber == 1) ? WORD_1 : WORD_2;
+
+    scrabble.placeLetter(newClue);
+    return in;
 }

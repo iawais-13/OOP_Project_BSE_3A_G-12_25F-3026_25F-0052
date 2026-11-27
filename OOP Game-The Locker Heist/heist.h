@@ -80,6 +80,18 @@ struct Tile
 {
     char tileLetter = ' ';   // letter placed in this box (' ' = no letter)
     bool filled = false;     // true when a letter has been placed here
+
+    // ----- MODULE 11 : Operator Overloading -----
+    // Two tiles are EQUAL when they have the same letter.
+    // Used to compare the letters with the letters of clue.txt.
+    bool operator==(const Tile& other) const;
+    bool operator!=(const Tile& other) const;
+
+    // ----- MODULE 11 : Friend functions -----
+    // cout << tile  prints  [G]  (or  [ ]  when empty)
+    // cin  >> tile  reads one letter into the tile
+    friend ostream& operator<<(ostream& out, const Tile& tile);
+    friend istream& operator>>(istream& in, Tile& tile);
 };
 
 // Clue is a "carrier". It carries one letter and its position
@@ -100,6 +112,12 @@ struct Location
     int boardPosLoc = 0;           // position of that letter in Word 1
     WordRow locRow = WORD_1;       // always WORD_1 for locations
     bool locSearchFlag = false;    // true after the detective searches it
+
+    // ----- MODULE 11 : Friend functions -----
+    // cout << location  prints  "Study Room   - NOT Searched"
+    // cin  >> location  reads   name letter position  (e.g. Garden M 4)
+    friend ostream& operator<<(ostream& out, const Location& place);
+    friend istream& operator>>(istream& in, Location& place);
 };
 
 
@@ -401,6 +419,12 @@ public:
 
     // Shows every letter with its position, e.g. [R at 3] [G at 1]
     void display() const;
+
+    // ----- MODULE 11 : Operator Overloading -----
+    // rack1 + rack2  joins both racks into ONE new rack, with a space
+    // between them: "GERMANS" + "SHEPHERD" -> "GERMANS SHEPHERD"
+    // (the final clue that points to the culprit)
+    TileRack operator+(const TileRack& other) const;
 };
 
 
@@ -435,6 +459,18 @@ public:
 // ---------------------------------------------------------------------
 class Character
 {
+    // ----- MODULE 11 : Friend class -----
+    // GameEngine is a FRIEND of Character, so it can reach the private and
+    // protected data directly (e.g. set isCulprit = true for the culprit)
+    // without a public setter that any other class could misuse.
+    friend class GameEngine;
+
+    // ----- MODULE 11 : Friend functions -----
+    // cout << person  calls the VIRTUAL display(), so the right version runs
+    // cin  >> person  reads a new name and nationality
+    friend ostream& operator<<(ostream& out, const Character& person);
+    friend istream& operator>>(istream& in, Character& person);
+
 protected:
     string characterName;   // e.g. "Mr.Enzo"
     string characterRole;   // e.g. "Cook"
@@ -867,6 +903,12 @@ public:
     // ----- Display -----
     void displayWord(WordRow row) const;            // one row
     void displayBoard() const;                      // both rows
+
+    // ----- MODULE 11 : Friend functions -----
+    // cout << scrabble  prints the whole board
+    // cin  >> scrabble  reads  letter position row  (e.g. G 1 1) and places it
+    friend ostream& operator<<(ostream& out, const Scrabble& scrabble);
+    friend istream& operator>>(istream& in, Scrabble& scrabble);
 };
 
 
