@@ -2,8 +2,9 @@
 //  File      : main.cpp
 //  Project   : THE LOCKER HEIST - A Detective Game backed by OOP Principles
 //  Purpose   : This is the DRIVER file. Later it will only start the
-//              GameEngine. For now (Module 4 - Part B) it is used to TEST
-//              the Scrabble class (jagged array, placing letters, checks).
+//              GameEngine. For now (Module 5) it is used to TEST the
+//              TileRack class and the complete clue flow:
+//              Location / Character -> Clue -> Rack -> Scrabble board
 // =====================================================================
 
 #include "heist.h"
@@ -20,76 +21,47 @@ Clue makeClue(char letter, int position, WordRow row)
     return newClue;
 }
 
-// ---------------------------------------------------------------------
-//  TEST HELPER : tries to place a clue and prints the result.
-//  If an exception is thrown, its message is shown (no crash).
-// ---------------------------------------------------------------------
-void tryToPlace(Scrabble& scrabble, Clue clue)
-{
-    cout << "Placing '" << clue.clueLetter << "' at position " << clue.cluePosition
-        << " of " << wordRowToText(clue.clueRow) << " ... ";
-    try
-    {
-        scrabble.placeLetter(clue);
-        cout << "Placed." << endl;
-    }
-    catch (GameException& error)
-    {
-        cout << endl << "   " << error.getFullMessage() << endl;
-    }
-}
-
 
 int main()
 {
     cout << "==================================================" << endl;
-    cout << "     THE LOCKER HEIST - MODULE 4 (PART B) TEST    " << endl;
+    cout << "     THE LOCKER HEIST - MODULE 5 TEST             " << endl;
     cout << "==================================================" << endl;
 
-    // Target words of the GUARD profile from clue.txt
-    Scrabble scrabble;
-    scrabble.setTargetWords("GERMANS", "SHEPHERD");
+    // ------------------------------------------------------------
+    // TEST 1 : Adding letters to a small rack (space for 3)
+    // ------------------------------------------------------------
+    cout << "\n--- TEST 1 : Adding letters ---" << endl;
+    TileRack smallRack(3);
+    cout << "Rack at start: ";
+    smallRack.display();
+
+    smallRack.addTile(makeClue('R', 3, WORD_1));
+    smallRack.addTile(makeClue('G', 1, WORD_1));
+    cout << "After 2 letters: ";
+    smallRack.display();
+    cout << "Letters in order collected : " << smallRack.getLettersInOrder() << endl;
+    cout << "First letter and position  : " << smallRack.getLetterAt(0)
+        << " at " << smallRack.getPositionAt(0) << endl;
 
     // ------------------------------------------------------------
-    // TEST 1 : Empty board (jagged array: 7 slots and 8 slots)
+    // TEST 2 : Same position twice, and a full rack -> exceptions
     // ------------------------------------------------------------
-    cout << "\n--- TEST 1 : Empty board ---" << endl;
-    scrabble.displayBoard();
-
-    // ------------------------------------------------------------
-    // TEST 2 : Placing some letters in any order.
-    // Each letter goes to its own position.
-    // ------------------------------------------------------------
-    cout << "\n--- TEST 2 : Placing letters ---" << endl;
-    tryToPlace(scrabble, makeClue('R', 3, WORD_1));   // Study_Room
-    tryToPlace(scrabble, makeClue('G', 1, WORD_1));   // Bedroom_1
-    tryToPlace(scrabble, makeClue('S', 1, WORD_2));   // Mr.Leonardo
-    tryToPlace(scrabble, makeClue('D', 8, WORD_2));   // Mr.Jad
-    scrabble.displayBoard();
-
-    // ------------------------------------------------------------
-    // TEST 3 : Wrong moves -> exceptions
-    // ------------------------------------------------------------
-    cout << "\n--- TEST 3 : Wrong moves ---" << endl;
-    tryToPlace(scrabble, makeClue('X', 9, WORD_1));   // row 1 has only 7 slots
-    tryToPlace(scrabble, makeClue('X', 0, WORD_2));   // positions start from 1
-    tryToPlace(scrabble, makeClue('R', 3, WORD_1));   // slot 3 already filled
-
-    // ------------------------------------------------------------
-    // TEST 4 : Revealing a placed letter again
-    // ------------------------------------------------------------
-    cout << "\n--- TEST 4 : Reveal letters ---" << endl;
-    cout << "Letter at position 3 of Word 1: " << scrabble.revealLetter(WORD_1, 3) << endl;
-    cout << "Placed so far in Word 1: " << scrabble.getPlacedWord(WORD_1)
-        << "  (" << scrabble.getFilledCount(WORD_1) << " of 7)" << endl;
-
-    // ------------------------------------------------------------
-    // TEST 5 : Typing a word before its row is complete
-    // ------------------------------------------------------------
-    cout << "\n--- TEST 5 : Word not complete yet ---" << endl;
+    cout << "\n--- TEST 2 : Wrong adds ---" << endl;
     try
     {
-        scrabble.isWordCorrect(WORD_1, "GERMANS");
+        smallRack.addTile(makeClue('R', 3, WORD_1));   // position 3 is already in the rack
+    }
+    catch (GameException& error)
+    {
+        cout << error.getFullMessage() << endl;
+    }
+
+    smallRack.addTile(makeClue('M', 4, WORD_1));       // 3rd letter -> rack is full now
+    cout << "Is the rack full? " << (smallRack.isFull() ? "Yes" : "No") << endl;
+    try
+    {
+        smallRack.addTile(makeClue('A', 5, WORD_1));   // no space left
     }
     catch (GameException& error)
     {
@@ -97,60 +69,113 @@ int main()
     }
 
     // ------------------------------------------------------------
-    // TEST 6 : Completing Word 1, then trying to add one more letter
+    // TEST 3 : Removing letters until the rack is empty
     // ------------------------------------------------------------
-    cout << "\n--- TEST 6 : Completing Word 1 ---" << endl;
-    tryToPlace(scrabble, makeClue('E', 2, WORD_1));
-    tryToPlace(scrabble, makeClue('M', 4, WORD_1));
-    tryToPlace(scrabble, makeClue('A', 5, WORD_1));
-    tryToPlace(scrabble, makeClue('N', 6, WORD_1));
-    tryToPlace(scrabble, makeClue('S', 7, WORD_1));
-    scrabble.displayBoard();
-    tryToPlace(scrabble, makeClue('Z', 2, WORD_1));   // row is full now
+    cout << "\n--- TEST 3 : Removing letters ---" << endl;
+    try
+    {
+        while (true)
+        {
+            char removed = smallRack.removeLastTile();
+            cout << "Removed letter " << removed << ". Letters left: "
+                << smallRack.getCount() << endl;
+        }
+    }
+    catch (RackEmptyException& error)
+    {
+        cout << error.getFullMessage() << endl;
+    }
 
     // ------------------------------------------------------------
-    // TEST 7 : DEEP COPY (copy constructor and assignment operator)
+    // TEST 4 : DEEP COPY of a rack
     // ------------------------------------------------------------
-    cout << "\n--- TEST 7 : Deep copy ---" << endl;
-    Scrabble copiedBoard = scrabble;                  // copy constructor
-    copiedBoard.placeLetter(makeClue('H', 2, WORD_2));
+    cout << "\n--- TEST 4 : Deep copy ---" << endl;
+    TileRack originalRack(7);
+    originalRack.addTile(makeClue('G', 1, WORD_1));
 
-    Scrabble assignedBoard;
-    assignedBoard = scrabble;                         // assignment operator
-    assignedBoard.placeLetter(makeClue('E', 3, WORD_2));
+    TileRack copiedRack = originalRack;               // copy constructor
+    copiedRack.addTile(makeClue('E', 2, WORD_1));
 
-    cout << "COPY     Word 2: " << copiedBoard.getPlacedWord(WORD_2) << endl;
-    cout << "ASSIGNED Word 2: " << assignedBoard.getPlacedWord(WORD_2) << endl;
-    cout << "ORIGINAL Word 2: " << scrabble.getPlacedWord(WORD_2)
+    TileRack assignedRack;
+    assignedRack = originalRack;                      // assignment operator
+    assignedRack.addTile(makeClue('S', 7, WORD_1));
+
+    cout << "COPY     rack: " << copiedRack.getLettersByPosition() << endl;
+    cout << "ASSIGNED rack: " << assignedRack.getLettersByPosition() << endl;
+    cout << "ORIGINAL rack: " << originalRack.getLettersByPosition()
         << "  (original is safe)" << endl;
 
     // ------------------------------------------------------------
-    // TEST 8 : Your turn! Word 1 is complete, type it.
-    // Small letters are also accepted. Try a wrong word first.
+    // TEST 5 : The complete clue flow, like the real game.
+    //   Cottage (location) -> Clue -> Detective's rack -> Scrabble
+    //   Character (person) -> Clue -> Detective's rack -> Scrabble
+    // Letters of the GUARD profile: GERMANS + SHEPHERD
     // ------------------------------------------------------------
-    cout << "\n--- TEST 8 : Form Word 1 yourself ---" << endl;
-    scrabble.displayWord(WORD_1);
+    cout << "\n--- TEST 5 : Complete clue flow ---" << endl;
 
-    bool solved = false;
-    while (solved == false)
+    Cottage cottage;
+    cottage.setLocation(1, "Bedroom_1", 'G', 1);
+    cottage.setLocation(2, "Bedroom_2", 'E', 2);
+    cottage.setLocation(3, "Study_Room", 'R', 3);
+    cottage.setLocation(4, "Garden", 'M', 4);
+    cottage.setLocation(5, "Kitchen", 'A', 5);
+    cottage.setLocation(6, "Dining_Room", 'N', 6);
+    cottage.setLocation(7, "Living_Room", 'S', 7);
+
+    Character* people[3];
+    people[0] = new Victim("Mr.Leonardo", "French", 'S', 1);
+    people[1] = new Cook("Mr.Enzo", "Italian", 'H', 2);
+    people[2] = new PA("Mr.Jad", "Egyptian", 'D', 8);
+
+    Detective player("Agent_Halim", 100);
+    Scrabble scrabble;
+    scrabble.setTargetWords("GERMANS", "SHEPHERD");
+
+    // Visit all 7 locations (in a mixed order)
+    int visitOrder[7] = { 5, 3, 1, 7, 2, 6, 4 };
+    for (int i = 0; i < 7; i++)
     {
-        string typedWord;
-        cout << "Type Word 1: ";
-        cin >> typedWord;
-
-        if (scrabble.isWordCorrect(WORD_1, typedWord))
-        {
-            cout << "Correct! Word 1 is " << scrabble.getTargetWord(WORD_1) << "." << endl;
-            solved = true;
-        }
-        else
-        {
-            InvalidWordException wrongWord(typedWord);
-            cout << wrongWord.getFullMessage() << " (-10 credibility in the real game)" << endl;
-        }
+        Clue foundClue = cottage.searchLocation(visitOrder[i]);
+        player.collectClue(foundClue);       // 1. save in the rack
+        scrabble.placeLetter(foundClue);     // 2. place on the board
     }
 
-    // All boards are destroyed here; their destructors free the heap memory
-    cout << "\nModule 4 (Part B) test finished successfully." << endl;
+    // Interview 3 people
+    for (int i = 0; i < 3; i++)
+    {
+        Clue personClue = people[i]->getClue();
+        player.collectClue(personClue);
+        scrabble.placeLetter(personClue);
+    }
+
+    cout << endl;
+    player.display();
+    cout << endl;
+    scrabble.displayBoard();
+
+    cout << "\nRack 1 by position: " << player.getRack(WORD_1).getLettersByPosition() << endl;
+    cout << "Rack 2 by position: " << player.getRack(WORD_2).getLettersByPosition() << endl;
+
+    // ------------------------------------------------------------
+    // TEST 6 : DEEP COPY of a Detective.
+    // The Detective has no copy constructor of its own. C++ copies it
+    // member by member, and for each TileRack member it calls the
+    // TileRack copy constructor, which makes a deep copy.
+    // ------------------------------------------------------------
+    cout << "\n--- TEST 6 : Copying a Detective ---" << endl;
+    Detective copiedPlayer = player;
+    copiedPlayer.collectClue(makeClue('E', 3, WORD_2));
+
+    cout << "COPY     Word 2 rack: " << copiedPlayer.getRack(WORD_2).getLettersByPosition() << endl;
+    cout << "ORIGINAL Word 2 rack: " << player.getRack(WORD_2).getLettersByPosition()
+        << "  (original is safe)" << endl;
+
+    for (int i = 0; i < 3; i++)
+    {
+        delete people[i];
+        people[i] = nullptr;
+    }
+
+    cout << "\nModule 5 test finished successfully." << endl;
     return 0;
 }

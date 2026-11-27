@@ -375,19 +375,55 @@ void Victim::display() const
 
 // ---------------- Class: Detective ----------------
 
-// The detective's role is "Detective" and default nationality is "Malay"
+// The detective's role is "Detective" and default nationality is "Malay".
+// The racks are member objects, so they are built in the initializer list
+// with their sizes: 7 letters for Word 1 and 8 letters for Word 2.
 Detective::Detective(string name, int startingCredibility)
-    : Character(name, "Detective", "Malay")
+    : Character(name, "Detective", "Malay"),
+    word1Rack(7),
+    word2Rack(8)
 {
     credibility = startingCredibility;
     turns = 0;
     solvedWords = "";
 }
 
-// Nothing on the heap yet. In Module 5 the racks will be added and this
-// destructor will make sure their memory is freed.
+// The racks free their own heap memory in ~TileRack(), which runs
+// automatically after this destructor (composition).
 Detective::~Detective()
 {
+}
+
+// Returns a rack by const reference: the caller can read it, not change it
+const TileRack& Detective::getRack(WordRow row) const
+{
+    if (row == WORD_1)
+    {
+        return word1Rack;
+    }
+    return word2Rack;
+}
+
+// Puts the clue in the rack of its own word
+void Detective::collectClue(Clue clue)
+{
+    if (clue.clueRow == WORD_1)
+    {
+        word1Rack.addTile(clue);
+    }
+    else
+    {
+        word2Rack.addTile(clue);
+    }
+}
+
+// Shows the letters of both racks
+void Detective::displayRacks() const
+{
+    cout << "Rack (Word 1): ";
+    word1Rack.display();
+    cout << "Rack (Word 2): ";
+    word2Rack.display();
 }
 
 int Detective::getCredibility() const
@@ -442,6 +478,7 @@ void Detective::display() const
     cout << "Credibility : " << credibility << endl;
     cout << "Turns used  : " << turns << endl;
     cout << "Solved words: " << (solvedWords == "" ? "(none yet)" : solvedWords) << endl;
+    displayRacks();
 }
 
 
@@ -1078,4 +1115,209 @@ void Scrabble::displayBoard() const
     cout << "Scrabble:" << endl;
     displayWord(WORD_1);
     displayWord(WORD_2);
+}
+
+
+// =====================================================================
+//  MODULE 5 : CLUE SYSTEM  -  TileRack
+// =====================================================================
+
+// Constructor: creates two empty arrays of the given size
+TileRack::TileRack(int rackCapacity)
+{
+    if (rackCapacity < 1)
+    {
+        rackCapacity = 1;    // a rack must have space for at least one letter
+    }
+
+    capacity = rackCapacity;
+    count = 0;
+    tiles = new Tile[capacity];
+    positions = new int[capacity];
+
+    for (int i = 0; i < capacity; i++)
+    {
+        positions[i] = 0;    // 0 = no position yet
+    }
+}
+
+// Copy constructor: "TileRack copy = original;" (deep copy)
+TileRack::TileRack(const TileRack& other)
+{
+    copyRackFrom(other);
+}
+
+// Assignment operator: "copy = original;" (deep copy)
+TileRack& TileRack::operator=(const TileRack& other)
+{
+    if (this != &other)          // self-assignment check
+    {
+        freeMemory();
+        copyRackFrom(other);
+    }
+    return *this;
+}
+
+// Destructor: frees both arrays
+TileRack::~TileRack()
+{
+    freeMemory();
+}
+
+// DEEP COPY: new arrays of the same size, then copy every value
+void TileRack::copyRackFrom(const TileRack& other)
+{
+    capacity = other.capacity;
+    count = other.count;
+    tiles = new Tile[capacity];
+    positions = new int[capacity];
+
+    for (int i = 0; i < capacity; i++)
+    {
+        tiles[i] = other.tiles[i];
+        positions[i] = other.positions[i];
+    }
+}
+
+void TileRack::freeMemory()
+{
+    delete[] tiles;
+    delete[] positions;
+    tiles = nullptr;
+    positions = nullptr;
+}
+
+// Adds a letter at the end of the rack. Two checks first:
+//  1. the rack must not be full
+//  2. the same board position must not be collected twice
+void TileRack::addTile(Clue clue)
+{
+    if (isFull())
+    {
+        throw RackFullException();
+    }
+
+    if (hasPosition(clue.cluePosition))
+    {
+        throw AlreadyVisitedException("position " + to_string(clue.cluePosition));
+    }
+
+    tiles[count].tileLetter = clue.clueLetter;
+    tiles[count].filled = true;
+    positions[count] = clue.cluePosition;
+    count++;
+}
+
+// Removes the last letter (like taking the top plate from a pile)
+char TileRack::removeLastTile()
+{
+    if (isEmpty())
+    {
+        throw RackEmptyException();
+    }
+
+    count--;
+    char removedLetter = tiles[count].tileLetter;
+
+    // clear the slot so it is empty again
+    tiles[count].tileLetter = ' ';
+    tiles[count].filled = false;
+    positions[count] = 0;
+
+    return removedLetter;
+}
+
+bool TileRack::isFull() const
+{
+    return count == capacity;
+}
+
+bool TileRack::isEmpty() const
+{
+    return count == 0;
+}
+
+int TileRack::getCount() const
+{
+    return count;
+}
+
+int TileRack::getCapacity() const
+{
+    return capacity;
+}
+
+// Checks if a letter for this board position is already in the rack
+bool TileRack::hasPosition(int position) const
+{
+    for (int i = 0; i < count; i++)
+    {
+        if (positions[i] == position)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+char TileRack::getLetterAt(int index) const
+{
+    if (index < 0 || index >= count)
+    {
+        throw InvalidPositionException(index + 1, count);
+    }
+    return tiles[index].tileLetter;
+}
+
+int TileRack::getPositionAt(int index) const
+{
+    if (index < 0 || index >= count)
+    {
+        throw InvalidPositionException(index + 1, count);
+    }
+    return positions[index];
+}
+
+// Letters in the order they were collected, e.g. "RGA"
+string TileRack::getLettersInOrder() const
+{
+    string letters = "";
+    for (int i = 0; i < count; i++)
+    {
+        letters = letters + tiles[i].tileLetter;
+    }
+    return letters;
+}
+
+// Letters arranged by their board position. Missing letters are '_'.
+// Example: R at 3, G at 1, A at 5 in a rack of 7 -> "G_R_A__"
+string TileRack::getLettersByPosition() const
+{
+    string word(capacity, '_');      // a string of '_' with the rack's length
+
+    for (int i = 0; i < count; i++)
+    {
+        int index = positions[i] - 1;          // position 1 -> index 0
+        if (index >= 0 && index < capacity)
+        {
+            word[index] = tiles[i].tileLetter;
+        }
+    }
+    return word;
+}
+
+// Shows every letter with its position, or "(empty)"
+void TileRack::display() const
+{
+    if (isEmpty())
+    {
+        cout << "(empty)" << endl;
+        return;
+    }
+
+    for (int i = 0; i < count; i++)
+    {
+        cout << "[" << tiles[i].tileLetter << " at " << positions[i] << "] ";
+    }
+    cout << " (" << count << "/" << capacity << ")" << endl;
 }

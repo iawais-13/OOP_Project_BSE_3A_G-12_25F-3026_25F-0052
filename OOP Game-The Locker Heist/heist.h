@@ -239,6 +239,65 @@ public:
 
 
 // =====================================================================
+//  MODULE 5 : CLUE SYSTEM  -  TileRack
+// ---------------------------------------------------------------------
+//  NOTE: TileRack is written BEFORE the Character classes, because the
+//  Detective class (Module 3) keeps two TileRack objects inside it, and
+//  C++ must know a class before it can be used as a member.
+// =====================================================================
+
+// ---------------------------------------------------------------------
+//  Class: TileRack
+//  Stores the letters collected by the detective, together with the
+//  board position of every letter.
+//  It owns a Tile array on the heap (DMA). Because a Tile has no
+//  position, a second (parallel) int array keeps the positions:
+//      tiles[i]     -> letter number i
+//      positions[i] -> board position of that letter
+// ---------------------------------------------------------------------
+class TileRack
+{
+private:
+    Tile* tiles;        // dynamic array of letters
+    int* positions;     // dynamic array of board positions (parallel to tiles)
+    int capacity;       // maximum letters (7 for Word 1, 8 for Word 2)
+    int count;          // letters stored so far
+
+    // Small private helpers
+    void copyRackFrom(const TileRack& other);   // makes a DEEP copy
+    void freeMemory();                          // deletes both arrays
+
+public:
+    TileRack(int rackCapacity = 7);
+    TileRack(const TileRack& other);              // copy constructor (deep copy)
+    TileRack& operator=(const TileRack& other);   // assignment operator (deep copy)
+    ~TileRack();                                  // frees heap memory
+
+    // Stores the letter and position carried by a Clue
+    void addTile(Clue clue);
+
+    // Removes the last added letter and returns it
+    char removeLastTile();
+
+    // ----- Checks and getters -----
+    bool isFull() const;
+    bool isEmpty() const;
+    int getCount() const;
+    int getCapacity() const;
+    bool hasPosition(int position) const;     // is this position already collected?
+    char getLetterAt(int index) const;        // index 0 = first collected letter
+    int getPositionAt(int index) const;
+
+    // String manipulation:
+    string getLettersInOrder() const;         // order of collection, e.g. "RGA"
+    string getLettersByPosition() const;      // board order, e.g. "G_R_A__"
+
+    // Shows every letter with its position, e.g. [R at 3] [G at 1]
+    void display() const;
+};
+
+
+// =====================================================================
 //  MODULE 3 : CHARACTER HIERARCHY  (Part A)
 // ---------------------------------------------------------------------
 //  INHERITANCE lets a child class reuse the data and functions of a
@@ -343,9 +402,14 @@ public:
 
 // ---------------------------------------------------------------------
 //  Class: Detective  (inherits Character)
-//  The PLAYER. Stores credibility, number of turns and solved words.
+//  The PLAYER. Stores credibility, number of turns, solved words and the
+//  collected letters.
 //  NOTE: The turn count is increased by the GameEngine. The Detective
-//  only stores it. The letter racks will be added in Module 5.
+//  only stores it.
+//
+//  COMPOSITION (Detective <>--- TileRack, filled diamond):
+//  The two racks are member OBJECTS. They are created with the Detective
+//  and destroyed with it; they cannot live without the Detective.
 // ---------------------------------------------------------------------
 class Detective : public Character
 {
@@ -353,6 +417,9 @@ private:
     int credibility;        // starts from 100, game is lost at 0
     int turns;              // turns used so far
     string solvedWords;     // words solved correctly, e.g. "GERMANS"
+
+    TileRack word1Rack;     // 7 letters collected from the locations
+    TileRack word2Rack;     // 8 letters collected from the people
 
 public:
     Detective(string name, int startingCredibility);
@@ -362,11 +429,18 @@ public:
     int getCredibility() const;
     int getTurns() const;
     string getSolvedWords() const;
+    const TileRack& getRack(WordRow row) const;   // read-only access to a rack
 
     // ----- Setters / actions -----
     void setTurns(int turnCount);
     void loseCredibility(int amount);   // never goes below 0
     void addSolvedWord(string word);
+
+    // Saves a collected clue in the correct rack (Word 1 or Word 2)
+    void collectClue(Clue clue);
+
+    // Shows the letters of both racks
+    void displayRacks() const;
 
     void display() const override;
 };
