@@ -697,11 +697,16 @@ string replaceUnderscores(string text)
 //  MODULE 4 : GAME BOARDS (DMA)  -  Part A : Cottage
 // =====================================================================
 
+// ---------------------------------------------------------------------
+//  OLD RAW DMA LOGIC (before Module 8: Templates)
+//  Kept as comments, as the manual asks. The new version is below.
+// ---------------------------------------------------------------------
+/*
 // Constructor: creates the array of 7 pointers, and then one empty
 // Location on the heap for every pointer.
 Cottage::Cottage()
 {
-    locations = new Location * [TOTAL_LOCATIONS];
+    locations = new Location*[TOTAL_LOCATIONS];
 
     for (int i = 0; i < TOTAL_LOCATIONS; i++)
     {
@@ -739,7 +744,7 @@ Cottage::~Cottage()
 // would point to the same memory -> deleting one would break the other.)
 void Cottage::copyLocationsFrom(const Cottage& other)
 {
-    locations = new Location * [TOTAL_LOCATIONS];
+    locations = new Location*[TOTAL_LOCATIONS];
 
     for (int i = 0; i < TOTAL_LOCATIONS; i++)
     {
@@ -763,6 +768,39 @@ void Cottage::freeMemory()
         locations = nullptr;   // no dangling pointer
     }
 }
+*/
+// ---------------------------------------------------------------------
+//  NEW TEMPLATE LOGIC (Module 8)
+// ---------------------------------------------------------------------
+
+// Constructor: DynamicArray creates the 7 empty locations for us
+Cottage::Cottage()
+    : locations(TOTAL_LOCATIONS)
+{
+}
+
+// Copy constructor: "Cottage copy = original;" (deep copy)
+// DynamicArray's own copy constructor makes new memory and copies the data.
+Cottage::Cottage(const Cottage& other)
+    : locations(other.locations)
+{
+}
+
+// Assignment operator: "copy = original;" (deep copy)
+Cottage& Cottage::operator=(const Cottage& other)
+{
+    if (this != &other)               // self-assignment check
+    {
+        locations = other.locations;  // DynamicArray's operator= does the deep copy
+    }
+    return *this;
+}
+
+// Destructor: nothing to delete here. ~DynamicArray() deletes every
+// location and the array itself automatically.
+Cottage::~Cottage()
+{
+}
 
 // The player uses numbers 1 to 7. Anything else is an invalid position.
 void Cottage::checkLocationNumber(int number) const
@@ -778,12 +816,12 @@ void Cottage::setLocation(int number, string name, char letter, int position)
 {
     checkLocationNumber(number);
 
-    Location* place = locations[number - 1];
-    place->locName = name;
-    place->letterClueLoc = letter;
-    place->boardPosLoc = position;
-    place->locRow = WORD_1;
-    place->locSearchFlag = false;
+    Location& place = locations[number - 1];   // reference to the real location
+    place.locName = name;
+    place.letterClueLoc = letter;
+    place.boardPosLoc = position;
+    place.locRow = WORD_1;
+    place.locSearchFlag = false;
 }
 
 // Searches a location: marks it as searched and gives back its clue.
@@ -792,27 +830,27 @@ Clue Cottage::searchLocation(int number)
 {
     checkLocationNumber(number);
 
-    Location* place = locations[number - 1];
-    place->locSearchFlag = true;
+    Location& place = locations[number - 1];   // reference to the real location
+    place.locSearchFlag = true;
 
     // Clue is the carrier that takes the letter to the Scrabble board
     Clue foundClue;
-    foundClue.clueLetter = place->letterClueLoc;
-    foundClue.cluePosition = place->boardPosLoc;
-    foundClue.clueRow = place->locRow;
+    foundClue.clueLetter = place.letterClueLoc;
+    foundClue.cluePosition = place.boardPosLoc;
+    foundClue.clueRow = place.locRow;
     return foundClue;
 }
 
 bool Cottage::isSearched(int number) const
 {
     checkLocationNumber(number);
-    return locations[number - 1]->locSearchFlag;
+    return locations[number - 1].locSearchFlag;
 }
 
 string Cottage::getLocationName(int number) const
 {
     checkLocationNumber(number);
-    return locations[number - 1]->locName;
+    return locations[number - 1].locName;
 }
 
 int Cottage::getLocationCount() const
@@ -826,7 +864,7 @@ int Cottage::getSearchedCount() const
     int count = 0;
     for (int i = 0; i < TOTAL_LOCATIONS; i++)
     {
-        if (locations[i]->locSearchFlag == true)
+        if (locations[i].locSearchFlag == true)
         {
             count++;
         }
@@ -841,7 +879,7 @@ void Cottage::displayLocations() const
 
     for (int i = 0; i < TOTAL_LOCATIONS; i++)
     {
-        string nameToShow = replaceUnderscores(locations[i]->locName);
+        string nameToShow = replaceUnderscores(locations[i].locName);
 
         cout << "[" << (i + 1) << "] " << nameToShow;
 
@@ -851,7 +889,7 @@ void Cottage::displayLocations() const
             cout << " ";
         }
 
-        if (locations[i]->locSearchFlag)
+        if (locations[i].locSearchFlag)
         {
             cout << "- Searched" << endl;
         }
@@ -888,6 +926,11 @@ string toUpperCase(string text)
 //  MODULE 4 : GAME BOARDS (DMA)  -  Part B : Scrabble
 // =====================================================================
 
+// ---------------------------------------------------------------------
+//  OLD RAW DMA LOGIC (before Module 8: Templates)
+//  Kept as comments, as the manual asks. The new version is below.
+// ---------------------------------------------------------------------
+/*
 // Constructor: creates an empty jagged board
 Scrabble::Scrabble()
 {
@@ -923,7 +966,7 @@ Scrabble::~Scrabble()
 // Every Tile starts as empty (' ' and false) because of the struct defaults.
 void Scrabble::createEmptyBoard()
 {
-    board = new Tile * [ROW_COUNT];
+    board = new Tile*[ROW_COUNT];
     board[WORD_1] = new Tile[WORD1_LENGTH];   // row 1 -> 7 slots
     board[WORD_2] = new Tile[WORD2_LENGTH];   // row 2 -> 8 slots
 }
@@ -956,6 +999,48 @@ void Scrabble::freeMemory()
         delete[] board;
         board = nullptr;          // no dangling pointer
     }
+}
+*/
+// ---------------------------------------------------------------------
+//  NEW TEMPLATE LOGIC (Module 8)
+// ---------------------------------------------------------------------
+
+// Constructor: makes the outer array with 2 rows, then gives each row
+// its own length. Every Tile starts empty because of the struct defaults.
+Scrabble::Scrabble()
+    : board(ROW_COUNT)
+{
+    targetWord1 = "";
+    targetWord2 = "";
+
+    board[WORD_1] = DynamicArray<Tile>(WORD1_LENGTH);   // row 1 -> 7 slots
+    board[WORD_2] = DynamicArray<Tile>(WORD2_LENGTH);   // row 2 -> 8 slots
+}
+
+// Copy constructor (deep copy): DynamicArray copies both rows for us
+Scrabble::Scrabble(const Scrabble& other)
+    : board(other.board)
+{
+    targetWord1 = other.targetWord1;
+    targetWord2 = other.targetWord2;
+}
+
+// Assignment operator (deep copy)
+Scrabble& Scrabble::operator=(const Scrabble& other)
+{
+    if (this != &other)          // self-assignment check
+    {
+        board = other.board;     // DynamicArray's operator= copies every row
+        targetWord1 = other.targetWord1;
+        targetWord2 = other.targetWord2;
+    }
+    return *this;
+}
+
+// Destructor: nothing to delete here. ~DynamicArray() frees each row
+// and then the outer array automatically.
+Scrabble::~Scrabble()
+{
 }
 
 // Row 1 accepts positions 1-7 and row 2 accepts positions 1-8
@@ -1122,6 +1207,11 @@ void Scrabble::displayBoard() const
 //  MODULE 5 : CLUE SYSTEM  -  TileRack
 // =====================================================================
 
+// ---------------------------------------------------------------------
+//  OLD RAW DMA LOGIC (before Module 8: Templates)
+//  Kept as comments, as the manual asks. The new version is below.
+// ---------------------------------------------------------------------
+/*
 // Constructor: creates two empty arrays of the given size
 TileRack::TileRack(int rackCapacity)
 {
@@ -1185,6 +1275,52 @@ void TileRack::freeMemory()
     delete[] positions;
     tiles = nullptr;
     positions = nullptr;
+}
+*/
+// ---------------------------------------------------------------------
+//  NEW TEMPLATE LOGIC (Module 8)
+// ---------------------------------------------------------------------
+
+// Constructor: the two DynamicArray members are created in the
+// initializer list with the rack's size (DynamicArray does the "new").
+TileRack::TileRack(int rackCapacity)
+    : tiles(rackCapacity), positions(rackCapacity)
+{
+    capacity = tiles.getSize();   // DynamicArray makes the size at least 1
+    count = 0;
+
+    for (int i = 0; i < capacity; i++)
+    {
+        positions[i] = 0;    // 0 = no position yet
+    }
+}
+
+// Copy constructor (deep copy): DynamicArray's own copy constructor
+// copies the arrays, we only copy the two numbers.
+TileRack::TileRack(const TileRack& other)
+    : tiles(other.tiles), positions(other.positions)
+{
+    capacity = other.capacity;
+    count = other.count;
+}
+
+// Assignment operator (deep copy): DynamicArray's operator= copies the arrays
+TileRack& TileRack::operator=(const TileRack& other)
+{
+    if (this != &other)          // self-assignment check
+    {
+        tiles = other.tiles;
+        positions = other.positions;
+        capacity = other.capacity;
+        count = other.count;
+    }
+    return *this;
+}
+
+// Destructor: nothing to delete here. The DynamicArray members free
+// their own memory in ~DynamicArray().
+TileRack::~TileRack()
+{
 }
 
 // Adds a letter at the end of the rack. Two checks first:

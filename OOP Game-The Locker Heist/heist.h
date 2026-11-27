@@ -239,6 +239,108 @@ public:
 
 
 // =====================================================================
+//  MODULE 8 : TEMPLATES  -  DynamicArray<T>
+// ---------------------------------------------------------------------
+//  A TEMPLATE is a "blueprint" class that works with ANY data type.
+//  We write the code once with a placeholder type T, and the compiler
+//  makes a real class for every type we use:
+//      DynamicArray<Location>  -> array of locations  (Cottage)
+//      DynamicArray<Tile>      -> array of tiles      (Scrabble, TileRack)
+//      DynamicArray<int>       -> array of integers   (TileRack positions)
+//  We cannot use the STL (vector), so this is our own simple version.
+//
+//  IMPORTANT: The WHOLE template (including the function bodies) is
+//  written here in the header file and NOT in heist.cpp. The compiler
+//  needs the complete code at the place where DynamicArray<Tile> etc.
+//  is used; if the bodies were in heist.cpp we would get linker errors.
+//
+//  This class does all the new / delete / deep copy work in ONE place,
+//  so Cottage, Scrabble and TileRack become shorter and safer.
+// =====================================================================
+
+template <class T>
+class DynamicArray
+{
+private:
+    T* data;      // the array on the heap
+    int size;     // number of elements
+
+public:
+    // Constructor: creates an array of the given size (at least 1)
+    DynamicArray(int arraySize = 1)
+    {
+        if (arraySize < 1)
+        {
+            arraySize = 1;
+        }
+        size = arraySize;
+        data = new T[size];
+    }
+
+    // Copy constructor: DEEP copy (new memory, then copy every element)
+    DynamicArray(const DynamicArray<T>& other)
+    {
+        size = other.size;
+        data = new T[size];
+        for (int i = 0; i < size; i++)
+        {
+            data[i] = other.data[i];
+        }
+    }
+
+    // Assignment operator: DEEP copy
+    DynamicArray<T>& operator=(const DynamicArray<T>& other)
+    {
+        if (this != &other)              // self-assignment check
+        {
+            delete[] data;               // free the old array
+
+            size = other.size;
+            data = new T[size];
+            for (int i = 0; i < size; i++)
+            {
+                data[i] = other.data[i];
+            }
+        }
+        return *this;
+    }
+
+    // Destructor: frees the heap memory
+    ~DynamicArray()
+    {
+        delete[] data;
+        data = nullptr;
+    }
+
+    // Index operator: lets us write  array[2]  like a normal array.
+    // It also CHECKS the index, so we can never go outside the array.
+    T& operator[](int index)
+    {
+        if (index < 0 || index >= size)
+        {
+            throw InvalidPositionException(index + 1, size);
+        }
+        return data[index];
+    }
+
+    // Same as above, but for const objects (read only)
+    const T& operator[](int index) const
+    {
+        if (index < 0 || index >= size)
+        {
+            throw InvalidPositionException(index + 1, size);
+        }
+        return data[index];
+    }
+
+    int getSize() const
+    {
+        return size;
+    }
+};
+
+
+// =====================================================================
 //  MODULE 5 : CLUE SYSTEM  -  TileRack
 // ---------------------------------------------------------------------
 //  NOTE: TileRack is written BEFORE the Character classes, because the
@@ -258,14 +360,19 @@ public:
 class TileRack
 {
 private:
-    Tile* tiles;        // dynamic array of letters
-    int* positions;     // dynamic array of board positions (parallel to tiles)
+    // ----- OLD RAW DMA LOGIC (before Module 8: Templates) -----
+    // Tile* tiles;        // dynamic array of letters
+    // int* positions;     // dynamic array of board positions (parallel to tiles)
+    // void copyRackFrom(const TileRack& other);   // makes a DEEP copy
+    // void freeMemory();                          // deletes both arrays
+    // ------------------------------------------------------------
+
+    // NEW (Module 8): the template does new / delete / deep copy for us
+    DynamicArray<Tile> tiles;       // letters
+    DynamicArray<int> positions;    // board positions (parallel to tiles)
+
     int capacity;       // maximum letters (7 for Word 1, 8 for Word 2)
     int count;          // letters stored so far
-
-    // Small private helpers
-    void copyRackFrom(const TileRack& other);   // makes a DEEP copy
-    void freeMemory();                          // deletes both arrays
 
 public:
     TileRack(int rackCapacity = 7);
@@ -650,11 +757,15 @@ public:
 class Cottage
 {
 private:
-    Location** locations;   // dynamic array of 7 Location pointers
+    // ----- OLD RAW DMA LOGIC (before Module 8: Templates) -----
+    // Location** locations;   // dynamic array of 7 Location pointers
+    // void copyLocationsFrom(const Cottage& other);   // makes a DEEP copy
+    // void freeMemory();                              // deletes everything
+    // ------------------------------------------------------------
 
-    // Small private helpers, used by the constructors and operator=
-    void copyLocationsFrom(const Cottage& other);   // makes a DEEP copy
-    void freeMemory();                              // deletes everything
+    // NEW (Module 8): template array of 7 locations
+    DynamicArray<Location> locations;
+
     void checkLocationNumber(int number) const;     // throws if not 1-7
 
 public:
@@ -705,14 +816,21 @@ public:
 class Scrabble
 {
 private:
-    Tile** board;           // jagged array: 2 rows of different length
+    // ----- OLD RAW DMA LOGIC (before Module 8: Templates) -----
+    // Tile** board;           // jagged array: 2 rows of different length
+    // void createEmptyBoard();                        // allocates both rows
+    // void copyBoardFrom(const Scrabble& other);      // makes a DEEP copy
+    // void freeMemory();                              // deletes both rows + board
+    // ------------------------------------------------------------
+
+    // NEW (Module 8): a jagged array made of templates.
+    // The outer array has 2 rows, and every row is a DynamicArray<Tile>
+    // with its own length (7 and 8). We still write board[row][index].
+    DynamicArray< DynamicArray<Tile> > board;
+
     string targetWord1;     // correct Word 1 from clue.txt, e.g. "GERMANS"
     string targetWord2;     // correct Word 2 from clue.txt, e.g. "SHEPHERD"
 
-    // Small private helpers
-    void createEmptyBoard();                        // allocates both rows
-    void copyBoardFrom(const Scrabble& other);      // makes a DEEP copy
-    void freeMemory();                              // deletes both rows + board
     void checkPosition(WordRow row, int position) const;  // throws if wrong
 
 public:
