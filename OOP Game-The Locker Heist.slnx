@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="OOP Game-The Locker Heist/OOP Game-The Locker Heist.vcxproj" />
+  <Project Path="OOP Game-The Locker Heist/OOP Game-The Locker Heist.vcxproj" Id="a4f81211-4cd8-452f-be11-b38aa75981bf" />
 </Solution>

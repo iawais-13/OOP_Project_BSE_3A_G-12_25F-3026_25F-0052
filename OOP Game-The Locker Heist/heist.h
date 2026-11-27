@@ -610,6 +610,75 @@ public:
 
 
 // =====================================================================
+//  MODULE 4 : GAME BOARDS (DMA)  -  Part B : Scrabble
+// ---------------------------------------------------------------------
+//  A JAGGED ARRAY is a 2D array whose rows have DIFFERENT lengths.
+//  Our board has 2 rows:
+//
+//      Row 1 (Word 1):  [ ][ ][ ][ ][ ][ ][ ]        <- 7 slots (locations)
+//      Row 2 (Word 2):  [ ][ ][ ][ ][ ][ ][ ][ ]     <- 8 slots (people)
+//
+//  board is a pointer to 2 row pointers, and each row is created
+//  separately with its own size.
+// =====================================================================
+
+// ---------------------------------------------------------------------
+//  Class: Scrabble
+//  The letter board. It places each collected letter at its position,
+//  shows the two words and checks the word typed by the detective.
+//  The position of a tile is its index in the row (position 1 = index 0).
+// ---------------------------------------------------------------------
+class Scrabble
+{
+private:
+    Tile** board;           // jagged array: 2 rows of different length
+    string targetWord1;     // correct Word 1 from clue.txt, e.g. "GERMANS"
+    string targetWord2;     // correct Word 2 from clue.txt, e.g. "SHEPHERD"
+
+    // Small private helpers
+    void createEmptyBoard();                        // allocates both rows
+    void copyBoardFrom(const Scrabble& other);      // makes a DEEP copy
+    void freeMemory();                              // deletes both rows + board
+    void checkPosition(WordRow row, int position) const;  // throws if wrong
+
+public:
+    // static const values shared by every Scrabble object
+    static const int ROW_COUNT = 2;
+    static const int WORD1_LENGTH = 7;
+    static const int WORD2_LENGTH = 8;
+
+    Scrabble();                                     // creates an empty board
+    Scrabble(const Scrabble& other);                // copy constructor (deep copy)
+    Scrabble& operator=(const Scrabble& other);     // assignment operator (deep copy)
+    ~Scrabble();                                    // frees all heap memory
+
+    // Saves the 2 correct words of the selected culprit (from clue.txt)
+    void setTargetWords(string word1, string word2);
+
+    // Places the letter of a clue at its position on the board
+    void placeLetter(Clue clue);
+
+    // Returns the letter at a position (' ' if the slot is still empty)
+    char revealLetter(WordRow row, int position) const;
+
+    // ----- Checks and getters -----
+    int getRowLength(WordRow row) const;
+    bool isSlotFilled(WordRow row, int position) const;
+    bool isRowComplete(WordRow row) const;
+    int getFilledCount(WordRow row) const;
+    string getPlacedWord(WordRow row) const;        // letters placed so far
+    string getTargetWord(WordRow row) const;
+
+    // Compares the word typed by the detective with the correct word
+    bool isWordCorrect(WordRow row, string typedWord) const;
+
+    // ----- Display -----
+    void displayWord(WordRow row) const;            // one row
+    void displayBoard() const;                      // both rows
+};
+
+
+// =====================================================================
 //  HELPER FUNCTIONS
 //  An enum is stored as a number, so these functions convert an enum
 //  value into readable text that we can show on the screen.
@@ -620,5 +689,8 @@ string menuChoiceToText(MenuChoice choice);
 
 // String manipulation: changes "Study_Room" into "Study Room" for display
 string replaceUnderscores(string text);
+
+// String manipulation: changes "germans" into "GERMANS"
+string toUpperCase(string text);
 
 #endif // HEIST_H

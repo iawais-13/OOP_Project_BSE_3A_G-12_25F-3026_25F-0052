@@ -826,3 +826,256 @@ void Cottage::displayLocations() const
 
     cout << "===========================" << endl;
 }
+
+
+// =====================================================================
+//  HELPER FUNCTION : toUpperCase
+//  Changes every small letter into a capital letter.
+//  In the ASCII table a small letter is 32 places after its capital,
+//  e.g. 'a' = 97 and 'A' = 65, so we subtract 32.
+// =====================================================================
+string toUpperCase(string text)
+{
+    for (int i = 0; i < (int)text.length(); i++)
+    {
+        if (text[i] >= 'a' && text[i] <= 'z')
+        {
+            text[i] = text[i] - 32;
+        }
+    }
+    return text;
+}
+
+
+// =====================================================================
+//  MODULE 4 : GAME BOARDS (DMA)  -  Part B : Scrabble
+// =====================================================================
+
+// Constructor: creates an empty jagged board
+Scrabble::Scrabble()
+{
+    targetWord1 = "";
+    targetWord2 = "";
+    createEmptyBoard();
+}
+
+// Copy constructor: "Scrabble copy = original;" (deep copy)
+Scrabble::Scrabble(const Scrabble& other)
+{
+    copyBoardFrom(other);
+}
+
+// Assignment operator: "copy = original;" (deep copy)
+Scrabble& Scrabble::operator=(const Scrabble& other)
+{
+    if (this != &other)          // self-assignment check
+    {
+        freeMemory();            // free old memory first
+        copyBoardFrom(other);    // then make a deep copy
+    }
+    return *this;
+}
+
+// Destructor: frees both rows and the board
+Scrabble::~Scrabble()
+{
+    freeMemory();
+}
+
+// Allocates the jagged array: 2 row pointers, then each row with its own size.
+// Every Tile starts as empty (' ' and false) because of the struct defaults.
+void Scrabble::createEmptyBoard()
+{
+    board = new Tile * [ROW_COUNT];
+    board[WORD_1] = new Tile[WORD1_LENGTH];   // row 1 -> 7 slots
+    board[WORD_2] = new Tile[WORD2_LENGTH];   // row 2 -> 8 slots
+}
+
+// DEEP COPY: new memory for both rows, then copy every tile one by one
+void Scrabble::copyBoardFrom(const Scrabble& other)
+{
+    targetWord1 = other.targetWord1;
+    targetWord2 = other.targetWord2;
+
+    createEmptyBoard();
+
+    for (int i = 0; i < WORD1_LENGTH; i++)
+    {
+        board[WORD_1][i] = other.board[WORD_1][i];
+    }
+    for (int i = 0; i < WORD2_LENGTH; i++)
+    {
+        board[WORD_2][i] = other.board[WORD_2][i];
+    }
+}
+
+// Deletes each row first, then the array of row pointers
+void Scrabble::freeMemory()
+{
+    if (board != nullptr)
+    {
+        delete[] board[WORD_1];
+        delete[] board[WORD_2];
+        delete[] board;
+        board = nullptr;          // no dangling pointer
+    }
+}
+
+// Row 1 accepts positions 1-7 and row 2 accepts positions 1-8
+void Scrabble::checkPosition(WordRow row, int position) const
+{
+    int rowLength = getRowLength(row);
+
+    if (position < 1 || position > rowLength)
+    {
+        throw InvalidPositionException(position, rowLength);
+    }
+}
+
+// Saves the correct words after checking their length.
+// A wrong length means clue.txt has wrong data.
+void Scrabble::setTargetWords(string word1, string word2)
+{
+    if ((int)word1.length() != WORD1_LENGTH)
+    {
+        throw FileCorruptedException("clue.txt", "Word 1 \"" + word1 + "\" must have 7 letters.");
+    }
+    if ((int)word2.length() != WORD2_LENGTH)
+    {
+        throw FileCorruptedException("clue.txt", "Word 2 \"" + word2 + "\" must have 8 letters.");
+    }
+
+    targetWord1 = toUpperCase(word1);
+    targetWord2 = toUpperCase(word2);
+}
+
+// Places a letter on the board. Three checks are done first:
+//  1. the word (row) must not be complete already
+//  2. the position must be inside the row
+//  3. the slot must still be empty
+void Scrabble::placeLetter(Clue clue)
+{
+    if (isRowComplete(clue.clueRow))
+    {
+        throw WordCompleteException(clue.clueRow);
+    }
+
+    checkPosition(clue.clueRow, clue.cluePosition);
+
+    Tile& slot = board[clue.clueRow][clue.cluePosition - 1];   // position 1 -> index 0
+
+    if (slot.filled)
+    {
+        throw SlotFilledException(clue.cluePosition);
+    }
+
+    slot.tileLetter = clue.clueLetter;
+    slot.filled = true;
+}
+
+// Shows the letter that was placed at a position (used when the player
+// visits a place or a person again)
+char Scrabble::revealLetter(WordRow row, int position) const
+{
+    checkPosition(row, position);
+    return board[row][position - 1].tileLetter;
+}
+
+int Scrabble::getRowLength(WordRow row) const
+{
+    if (row == WORD_1)
+    {
+        return WORD1_LENGTH;
+    }
+    return WORD2_LENGTH;
+}
+
+bool Scrabble::isSlotFilled(WordRow row, int position) const
+{
+    checkPosition(row, position);
+    return board[row][position - 1].filled;
+}
+
+// Counts the filled slots of one row
+int Scrabble::getFilledCount(WordRow row) const
+{
+    int count = 0;
+    for (int i = 0; i < getRowLength(row); i++)
+    {
+        if (board[row][i].filled)
+        {
+            count++;
+        }
+    }
+    return count;
+}
+
+// A row is complete when every slot is filled
+bool Scrabble::isRowComplete(WordRow row) const
+{
+    return getFilledCount(row) == getRowLength(row);
+}
+
+// Joins the placed letters into a string, e.g. "GER_A_S" (empty = '_')
+string Scrabble::getPlacedWord(WordRow row) const
+{
+    string word = "";
+    for (int i = 0; i < getRowLength(row); i++)
+    {
+        if (board[row][i].filled)
+        {
+            word = word + board[row][i].tileLetter;
+        }
+        else
+        {
+            word = word + '_';
+        }
+    }
+    return word;
+}
+
+string Scrabble::getTargetWord(WordRow row) const
+{
+    if (row == WORD_1)
+    {
+        return targetWord1;
+    }
+    return targetWord2;
+}
+
+// The detective can type a word only when its row is complete.
+// Small letters are allowed, so both words are changed to capitals first.
+bool Scrabble::isWordCorrect(WordRow row, string typedWord) const
+{
+    if (isRowComplete(row) == false)
+    {
+        throw WordIncompleteException(row);
+    }
+
+    return toUpperCase(typedWord) == getTargetWord(row);
+}
+
+// Prints one row like:  Word 1: [G] [E] [ ] [M] [ ] [ ] [S]
+void Scrabble::displayWord(WordRow row) const
+{
+    cout << "  " << wordRowToText(row) << ": ";
+
+    for (int i = 0; i < getRowLength(row); i++)
+    {
+        cout << "[" << board[row][i].tileLetter << "] ";
+    }
+
+    if (isRowComplete(row))
+    {
+        cout << "-> COMPLETE";
+    }
+    cout << endl;
+}
+
+// Prints the whole board (both rows)
+void Scrabble::displayBoard() const
+{
+    cout << "Scrabble:" << endl;
+    displayWord(WORD_1);
+    displayWord(WORD_2);
+}
