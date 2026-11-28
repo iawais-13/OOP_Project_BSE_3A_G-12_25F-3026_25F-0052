@@ -516,6 +516,11 @@ public:
     // The Detective has no clue, so the base version returns an empty clue.
     virtual Clue getClue() const;
 
+    // Can the detective accuse this person? (Module 14)
+    // Base version: NO (Victim, Detective). Suspect overrides it with YES.
+    // So the accuse list is made with polymorphism, not with a role check.
+    virtual bool canBeAccused() const;
+
     // PURE VIRTUAL function ( = 0 ). It makes Character an abstract class.
     virtual void display() const = 0;
 };
@@ -616,6 +621,9 @@ public:
     WordRow getRow() const;
 
     Clue getClue() const override;
+
+    // Every suspect can be accused
+    bool canBeAccused() const override;
 
     virtual void display() const = 0;   // still pure virtual
 };
@@ -1120,6 +1128,16 @@ private:
     bool interviewPerson();          // returns true if a turn was used
     void showPeopleMenu() const;
     void viewBoard() const;          // free: no turn
+
+    // ----- Module 14 : completion conditions -----
+    bool word1Solved;                // true when Word 1 was typed correctly
+    bool word2Solved;                // true when Word 2 was typed correctly
+
+    bool formWord();                 // returns true if a turn was used
+    bool accuseSuspect();            // returns true if a turn was used
+    void showFinalClue() const;      // Word 1 + Word 2 -> culprit
+    Character* findCulprit() const;  // the person with isCulprit = true
+    void finishGame();               // WIN / LOSE screen + save the score
 
 public:
     // Copying is not allowed ( = delete ): there must be only ONE engine

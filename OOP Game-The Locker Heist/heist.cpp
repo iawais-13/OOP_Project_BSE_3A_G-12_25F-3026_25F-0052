@@ -333,6 +333,12 @@ Clue Character::getClue() const
     return emptyClue;
 }
 
+// Base version: a Character cannot be accused (Victim, Detective)
+bool Character::canBeAccused() const
+{
+    return false;
+}
+
 
 // ---------------- Class: Victim ----------------
 
@@ -526,6 +532,12 @@ Clue Suspect::getClue() const
     suspectClue.cluePosition = boardPosChar;
     suspectClue.clueRow = clueRowChar;
     return suspectClue;
+}
+
+// All 7 suspects can be accused by the detective
+bool Suspect::canBeAccused() const
+{
+    return true;
 }
 
 
@@ -2307,6 +2319,8 @@ GameEngine::GameEngine()
     culpritRole = "";
     targetWord1 = "";
     targetWord2 = "";
+    word1Solved = false;
+    word2Solved = false;
 
     srand((unsigned int)time(0));      // new random culprit in every run
 }
@@ -2608,6 +2622,8 @@ void GameEngine::startNewGame()
     cottage = Cottage();
     scrabble = Scrabble();
     finalClueRack = TileRack(16);
+    word1Solved = false;
+    word2Solved = false;
 
     // Load the letters of the selected culprit from the files
     scrabble.setTargetWords(targetWord1, targetWord2);
@@ -2824,10 +2840,10 @@ void GameEngine::playGame()
                 viewBoard();             // free: turnUsed stays false
                 break;
             case 4:
-                cout << "\nForm a Word will be added in Module 14." << endl;
+                turnUsed = formWord();
                 break;
             case 5:
-                cout << "\nAccuse a Suspect will be added in Module 14." << endl;
+                turnUsed = accuseSuspect();
                 break;
             case 6:
                 if (askYesNo("Are you sure you want to quit this game?"))
@@ -2852,13 +2868,8 @@ void GameEngine::playGame()
         pressEnterToContinue();
     }
 
-    // The full WIN / LOSE screen and saving the score come in Module 14
-    clearScreen();
-    cout << "================= GAME OVER =================" << endl;
-    cout << "Credibility left : " << detective.getCredibility() << endl;
-    cout << "Turns used       : " << detective.getTurns() << " / " << rules.maxTurns << endl;
-    cout << "=============================================" << endl;
-    pressEnterToContinue();
+    // Module 14: WIN / LOSE screen and save the result
+    finishGame();
 }
 
 // [1] Visit a Location
@@ -3021,4 +3032,263 @@ void GameEngine::viewBoard() const
     cout << "Word 1: " << scrabble.getFilledCount(WORD_1) << "/" << Scrabble::WORD1_LENGTH
         << " letters   |   Word 2: " << scrabble.getFilledCount(WORD_2) << "/"
         << Scrabble::WORD2_LENGTH << " letters" << endl;
+
+    if (word1Solved && word2Solved)
+    {
+        showFinalClue();
+    }
+}
+
+
+// =====================================================================
+//  MODULE 14 : COMPLETION CONDITIONS
+// ---------------------------------------------------------------------
+//  - Form a Word : when a row is full, the detective types its word.
+//                  Correct -> word solved.  Wrong -> -10 credibility.
+//  - When both words are solved, the culprit's role (from clue.txt) is
+//    shown together with the final clue (Rack 1 + Rack 2).
+//  - Accuse      : correct culprit -> WIN.  Wrong person -> -5 credibility.
+//  - LOSE        : credibility 0, all turns used, or the player quits.
+//  - At the end  : WIN/LOSE screen, then the result is saved in
+//                  scoreBoard.txt, then back to the Main Menu.
+// =====================================================================
+
+// Finds the person whose isCulprit flag is true
+Character* GameEngine::findCulprit() const
+{
+    for (int i = 0; i < peopleCount; i++)
+    {
+        if (people[i]->getIsCulprit())
+        {
+            return people[i];
+        }
+    }
+    return nullptr;
+}
+
+// [4] Form a Word
+bool GameEngine::formWord()
+{
+    int pick;
+    while (true)
+    {
+        cout << "\n====== Form a Word ======" << endl;
+        cout << "[1] Word 1 (7 letters) - " << (word1Solved ? "SOLVED" : "not solved") << endl;
+        cout << "[2] Word 2 (8 letters) - " << (word2Solved ? "SOLVED" : "not solved") << endl;
+        cout << "[0] Back to the Game Menu" << endl;
+        cout << "Pick: ";
+
+        try
+        {
+            pick = readNumber(0, 2);
+            break;
+        }
+        catch (GameException& error)
+        {
+            cout << error.getFullMessage() << endl;
+        }
+    }
+
+    if (pick == 0)
+    {
+        return false;
+    }
+
+    WordRow row = (pick == 1) ? WORD_1 : WORD_2;
+    bool alreadySolved = (row == WORD_1) ? word1Solved : word2Solved;
+
+    if (alreadySolved)
+    {
+        cout << wordRowToText(row) << " is already solved: " << scrabble.getTargetWord(row) << endl;
+        return false;
+    }
+
+    // The row must be full before a word can be typed (exception otherwise)
+    if (!scrabble.isRowComplete(row))
+    {
+        throw WordIncompleteException(row);
+    }
+
+    scrabble.displayWord(row);
+    cout << "Type the word: ";
+    string typedWord;
+    getline(cin, typedWord);
+    typedWord = trimSpaces(typedWord);
+
+    if (typedWord == "")
+    {
+        throw InvalidInputException("the word cannot be empty.");
+    }
+
+    if (scrabble.isWordCorrect(row, typedWord))
+    {
+        // ----- correct word -----
+        if (row == WORD_1)
+        {
+            word1Solved = true;
+        }
+        else
+        {
+            word2Solved = true;
+        }
+        detective.addSolvedWord(scrabble.getTargetWord(row));
+        cout << "Correct! " << wordRowToText(row) << " is " << scrabble.getTargetWord(row) << "." << endl;
+
+        // Both words solved: make the final clue with operator+ (Module 11)
+        if (word1Solved && word2Solved)
+        {
+            finalClueRack = detective.getRack(WORD_1) + detective.getRack(WORD_2);
+            showFinalClue();
+        }
+    }
+    else
+    {
+        // ----- wrong word: -10 credibility (value from rules.txt) -----
+        detective.loseCredibility(rules.wrongWordPenalty);
+        InvalidWordException wrongWord(typedWord);
+        cout << wrongWord.getFullMessage() << "  (-" << rules.wrongWordPenalty
+            << " credibility, now " << detective.getCredibility() << ")" << endl;
+        cout << "You can try again in your next turn." << endl;
+    }
+
+    return true;      // typing a word (right or wrong) uses a turn
+}
+
+// Shows the meaning of the two solved words. The culprit's role is the
+// one read from clue.txt, and the nationality comes from the culprit object.
+void GameEngine::showFinalClue() const
+{
+    Character* culprit = findCulprit();
+    string nationalityText = (culprit != nullptr) ? culprit->getNationality() : "Unknown";
+
+    cout << "\n****************************************************" << endl;
+    cout << "Both words solved:" << endl;
+    cout << "  " << targetWord1 << " + " << targetWord2 << " = " << nationalityText
+        << "  ->  " << culpritRole << " is the Culprit!" << endl;
+    cout << "  Final clue (Rack 1 + Rack 2): " << finalClueRack.getLettersInOrder() << endl;
+    cout << "Now use [5] Accuse a Suspect to catch the culprit." << endl;
+    cout << "****************************************************" << endl;
+}
+
+// [5] Accuse a Suspect
+// Only people who can be accused are listed. canBeAccused() is VIRTUAL:
+// Suspect says YES, the Victim says NO, so no role check is needed here.
+bool GameEngine::accuseSuspect()
+{
+    DynamicArray<int> suspectIndex(MAX_PEOPLE);    // list number -> index in people[]
+    int suspectCount = 0;
+
+    int pick;
+    while (true)
+    {
+        cout << "\n====== Accuse a Suspect ======" << endl;
+        suspectCount = 0;
+        for (int i = 0; i < peopleCount; i++)
+        {
+            if (people[i]->canBeAccused())
+            {
+                suspectIndex[suspectCount] = i;
+                suspectCount++;
+                cout << "[" << suspectCount << "] " << people[i]->getName()
+                    << " (" << people[i]->getRole() << ")" << endl;
+            }
+        }
+        cout << "[0] Back to the Game Menu" << endl;
+        cout << "Pick: ";
+
+        try
+        {
+            pick = readNumber(0, suspectCount);
+            break;
+        }
+        catch (GameException& error)
+        {
+            cout << error.getFullMessage() << endl;
+        }
+    }
+
+    if (pick == 0)
+    {
+        return false;
+    }
+
+    Character* accused = people[suspectIndex[pick - 1]];
+
+    if (!askYesNo("Accuse " + accused->getName() + " (" + accused->getRole() + ")?"))
+    {
+        cout << "Going back..." << endl;
+        return false;
+    }
+
+    cout << "Accuse: " << accused->getName() << " (" << accused->getRole() << ")" << endl;
+
+    if (accused->getIsCulprit())
+    {
+        cout << accused->getName() << " is the culprit!" << endl;
+        state = STATE_WON;
+    }
+    else
+    {
+        cout << accused->getName() << " is NOT the culprit." << endl;
+        giveWrongStepPenalty("wrong accusation");
+    }
+
+    return true;      // an accusation uses a turn
+}
+
+// WIN / LOSE screen, then save the result in the Leader/Score Board
+void GameEngine::finishGame()
+{
+    clearScreen();
+
+    bool won = (state == STATE_WON);
+    int turnsLeft = rules.maxTurns - detective.getTurns();
+    if (turnsLeft < 0)
+    {
+        turnsLeft = 0;
+    }
+
+    Character* culprit = findCulprit();
+    string culpritText = culpritRole;
+    if (culprit != nullptr)
+    {
+        culpritText = culpritRole + " " + culprit->getName() + " (" + culprit->getNationality() + ")";
+    }
+
+    cout << "==============================================================" << endl;
+    if (won)
+    {
+        cout << "                   " << detective.getName() << " WIN!" << endl;
+        cout << "        You caught the culprit. Case closed, Detective!" << endl;
+    }
+    else
+    {
+        cout << "                   " << detective.getName() << " LOSE!" << endl;
+        cout << "              The culprit got away this time..." << endl;
+    }
+    cout << "==============================================================" << endl;
+    cout << " Final credibility : " << detective.getCredibility() << endl;
+    cout << " Turns used        : " << detective.getTurns() << " / " << rules.maxTurns
+        << "   (turns left: " << turnsLeft << ")" << endl;
+    cout << " Culprit           : " << culpritText << endl;
+    cout << " Words             : " << targetWord1 << " + " << targetWord2 << endl;
+    cout << "==============================================================" << endl;
+
+    // Save the result (ASSOCIATION: the engine uses the score board)
+    if (scoreBoard != nullptr)
+    {
+        try
+        {
+            scoreBoard->addScore(detective.getName(), won, detective.getCredibility(),
+                turnsLeft, culpritRole);
+            cout << "Your result has been saved in the Leader/Score Board." << endl;
+        }
+        catch (GameException& error)
+        {
+            cout << error.getFullMessage() << endl;
+        }
+    }
+
+    state = STATE_MENU;
+    pressEnterToContinue();      // after this, run() clears the screen and shows the Main Menu
 }
