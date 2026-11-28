@@ -1031,6 +1031,101 @@ public:
 
 
 // =====================================================================
+//  MODULE 12 : SINGLETON GAME ENGINE   (+ MODULE 2 : GAME INITIALIZATION)
+// ---------------------------------------------------------------------
+//  SINGLETON PATTERN: only ONE object of GameEngine can ever exist,
+//  because the whole game must be run by a single engine.
+//  How it is done:
+//    1. the constructor is PRIVATE -> nobody outside can write "new GameEngine"
+//    2. copying is not allowed      -> no second engine by copying
+//    3. a STATIC pointer keeps the one and only object
+//    4. getInstance() creates it the first time and then always
+//       returns the same object
+// ---------------------------------------------------------------------
+//  RELATIONSHIPS OF GAMEENGINE (Module 10):
+//    COMPOSITION (GameEngine <>--- filled diamond): Detective, Cottage,
+//      Scrabble and TileRack are member OBJECTS. They are born and die
+//      with the engine.
+//    ASSOCIATION (GameEngine ---> ScoreBoard): the engine only keeps a
+//      POINTER to a ScoreBoard that main() owns. It uses it, but does not
+//      create or delete it.
+//    FRIEND: GameEngine is a friend class of Character (sets isCulprit).
+//    DEPENDENCY (GameEngine - - -> GameException): it throws and catches
+//      exceptions, but does not keep them as members.
+// =====================================================================
+
+class GameEngine
+{
+private:
+    // ----- Singleton -----
+    static GameEngine* instance;     // the one and only engine
+
+    GameEngine();                    // PRIVATE constructor
+    ~GameEngine();                   // private: only destroyInstance() deletes it
+
+    // ----- Composition: parts owned by the engine -----
+    Detective detective;             // the player
+    Cottage cottage;                 // 7 locations (Word 1)
+    Scrabble scrabble;               // the letter board
+    TileRack finalClueRack;          // Word 1 + " " + Word 2 (made with operator+)
+
+    // The 8 people of the cottage (created from characters.txt)
+    static const int MAX_PEOPLE = 8;
+    Character* people[MAX_PEOPLE];
+    int peopleCount;
+
+    // ----- Association: used, but not owned -----
+    ScoreBoard* scoreBoard;
+
+    // ----- Game data -----
+    GameRules rules;                 // from rules.txt (or the defaults)
+    GameState state;                 // Menu, Playing, Won, Lost, Exit
+    int profileNumber;               // line of the culprit in clue.txt (1-7)
+    string culpritRole;              // e.g. "Guard"
+    string targetWord1;              // e.g. "GERMANS"
+    string targetWord2;              // e.g. "SHEPHERD"
+
+    // ----- Screen and input helpers -----
+    void clearScreen() const;
+    void pressEnterToContinue() const;
+    int readNumber(int minimum, int maximum) const;    // throws on wrong input
+    string readDetectiveName() const;                  // no empty name, no spaces
+
+    // ----- Main menu actions -----
+    void showTitle() const;
+    void showMainMenu() const;
+    void showLeaderBoard() const;
+    void showAbout() const;
+    void showRules();
+
+    // ----- Module 2 : game initialization -----
+    void loadRules();                // rules.txt, or the defaults if it fails
+    void chooseRandomCulprit();      // random profile from clue.txt
+    void markCulprit();              // sets isCulprit = true (friend access)
+    void freePeople();               // deletes the 8 character objects
+    void startNewGame();
+    void showGameStatus() const;     // credibility, turns, racks, board
+
+public:
+    // Copying is not allowed ( = delete ): there must be only ONE engine
+    GameEngine(const GameEngine& other) = delete;
+    GameEngine& operator=(const GameEngine& other) = delete;
+
+    // The ONLY way to get the engine
+    static GameEngine* getInstance();
+
+    // Deletes the engine at the end of the program (no memory leak)
+    static void destroyInstance();
+
+    // Connects the leader/score board (association)
+    void setScoreBoard(ScoreBoard* board);
+
+    // Runs the whole game (main menu loop)
+    void run();
+};
+
+
+// =====================================================================
 //  HELPER FUNCTIONS
 //  An enum is stored as a number, so these functions convert an enum
 //  value into readable text that we can show on the screen.

@@ -2267,3 +2267,441 @@ void ScoreBoard::displayScores() const
 
     file.close();
 }
+
+
+// =====================================================================
+//  MODULE 12 : SINGLETON GAME ENGINE   (+ MODULE 2 : GAME INITIALIZATION)
+// =====================================================================
+
+// The static pointer must be defined ONCE in a .cpp file.
+// It starts as nullptr: no engine has been made yet.
+GameEngine* GameEngine::instance = nullptr;
+
+// PRIVATE constructor. The member objects are built in the initializer
+// list (composition). The Detective gets a temporary name; the real name
+// is asked when a new game starts.
+GameEngine::GameEngine()
+    : detective("Detective", 100),
+    finalClueRack(16)                // 7 letters + 1 space + 8 letters
+{
+    for (int i = 0; i < MAX_PEOPLE; i++)
+    {
+        people[i] = nullptr;
+    }
+    peopleCount = 0;
+
+    scoreBoard = nullptr;
+    state = STATE_MENU;
+    profileNumber = 0;
+    culpritRole = "";
+    targetWord1 = "";
+    targetWord2 = "";
+
+    srand((unsigned int)time(0));      // new random culprit in every run
+}
+
+// Private destructor: frees the 8 character objects
+GameEngine::~GameEngine()
+{
+    freePeople();
+}
+
+// Gives the one and only engine. It is created on the first call only.
+GameEngine* GameEngine::getInstance()
+{
+    if (instance == nullptr)
+    {
+        instance = new GameEngine();
+    }
+    return instance;
+}
+
+// Deletes the engine (called once at the end of main)
+void GameEngine::destroyInstance()
+{
+    delete instance;
+    instance = nullptr;
+}
+
+// ASSOCIATION: the engine only remembers where the score board is
+void GameEngine::setScoreBoard(ScoreBoard* board)
+{
+    scoreBoard = board;
+}
+
+
+// ---------------- Screen and input helpers ----------------
+
+// Clears the console window (Windows command)
+void GameEngine::clearScreen() const
+{
+    system("cls");
+}
+
+void GameEngine::pressEnterToContinue() const
+{
+    cout << "\nPress Enter to continue...";
+    string ignoreLine;
+    getline(cin, ignoreLine);
+}
+
+// Reads a whole line and turns it into a number between minimum and maximum.
+// Reading the whole line with getline() keeps cin clean after wrong input.
+int GameEngine::readNumber(int minimum, int maximum) const
+{
+    string input;
+    getline(cin, input);
+
+    int number;
+    if (!textToNumber(input, number))
+    {
+        throw InvalidInputException("please type a number.");
+    }
+
+    if (number < minimum || number > maximum)
+    {
+        throw InvalidPositionException(number, maximum);
+    }
+
+    return number;
+}
+
+// Asks for the detective's name until a valid one is typed.
+// Rules (Module 2): the name must not be empty and must not have spaces.
+// The player can use '_' or '.' instead of a space, e.g. Agent_007.
+string GameEngine::readDetectiveName() const
+{
+    while (true)
+    {
+        cout << "Enter detective name (use _ or . instead of spaces): ";
+        string name;
+        getline(cin, name);
+        name = trimSpaces(name);
+
+        try
+        {
+            if (name == "")
+            {
+                throw InvalidInputException("the name cannot be empty.");
+            }
+
+            for (int i = 0; i < (int)name.length(); i++)
+            {
+                if (name[i] == ' ')
+                {
+                    throw InvalidInputException("no spaces allowed, write it like Agent_007 or Insp.Jamshad");
+                }
+            }
+
+            return name;
+        }
+        catch (GameException& error)
+        {
+            cout << error.getFullMessage() << endl;
+        }
+    }
+}
+
+
+// ---------------- Main menu ----------------
+
+// Shown once when the program starts: game title and a short scenario
+void GameEngine::showTitle() const
+{
+    clearScreen();
+    cout << "======================================================" << endl;
+    cout << "                  THE LOCKER HEIST" << endl;
+    cout << "        A Detective Game backed by OOP Principles" << endl;
+    cout << "======================================================" << endl;
+    cout << "A locker hidden behind a bookshelf in the Study Room" << endl;
+    cout << "was robbed during a party at a wealthy business" << endl;
+    cout << "owner's cottage. Eight people were there, and one of" << endl;
+    cout << "them is the CULPRIT. You are the private detective" << endl;
+    cout << "hired to find out who did it." << endl;
+    cout << "======================================================" << endl;
+    pressEnterToContinue();
+}
+
+// The Main Menu is made from the MenuChoice enum (Module 13)
+void GameEngine::showMainMenu() const
+{
+    cout << "======================================================" << endl;
+    cout << "            THE LOCKER HEIST - MAIN MENU" << endl;
+    cout << "======================================================" << endl;
+
+    for (int option = MENU_NEW_GAME; option <= MENU_EXIT; option++)
+    {
+        cout << "      [" << option << "] " << menuChoiceToText((MenuChoice)option) << endl;
+    }
+
+    cout << "======================================================" << endl;
+    cout << "Choice: ";
+}
+
+// [2] Leader / Score Board (uses the associated ScoreBoard object)
+void GameEngine::showLeaderBoard() const
+{
+    clearScreen();
+
+    if (scoreBoard == nullptr)
+    {
+        cout << "The score board is not connected." << endl;
+    }
+    else
+    {
+        try
+        {
+            scoreBoard->displayScores();
+        }
+        catch (FileNotFoundException&)
+        {
+            cout << "No games have been played yet." << endl;
+        }
+    }
+    pressEnterToContinue();
+}
+
+// [3] About (read from about.txt)
+void GameEngine::showAbout() const
+{
+    clearScreen();
+    try
+    {
+        GameFileReader::showTextFile(ABOUT_FILE);
+    }
+    catch (GameException& error)
+    {
+        cout << error.getFullMessage() << endl;
+    }
+    pressEnterToContinue();
+}
+
+// [4] Rules (numbers from rules.txt, plus how to play)
+void GameEngine::showRules()
+{
+    clearScreen();
+    loadRules();
+
+    cout << "===================== GAME RULES =====================" << endl;
+    cout << "Maximum turns        : " << rules.maxTurns << endl;
+    cout << "Starting credibility : " << rules.startingCredibility << endl;
+    cout << "Every wrong step     : -" << rules.wrongTurnPenalty << " credibility" << endl;
+    cout << "Every wrong word     : -" << rules.wrongWordPenalty << " credibility" << endl;
+    cout << "WIN  : " << replaceUnderscores(rules.winCondition) << endl;
+    cout << "LOSE : " << replaceUnderscores(rules.loseCondition) << endl;
+    cout << "--------------------- HOW TO PLAY --------------------" << endl;
+    cout << "1. Visit the 7 locations    -> letters of Word 1." << endl;
+    cout << "2. Interview the 8 people   -> letters of Word 2." << endl;
+    cout << "3. Every letter is placed at its position on the board." << endl;
+    cout << "4. When a row is full, type its word (Form a Word)." << endl;
+    cout << "5. The two words point to the culprit. Accuse him/her!" << endl;
+    cout << "------------------ INTERVIEW RULES -------------------" << endl;
+    cout << "Business Owner (Victim) : credibility >= " << Victim::REQUIRED_CREDIBILITY << endl;
+    cout << "Owner's Child           : credibility >= " << CloseRelations::REQUIRED_CREDIBILITY << endl;
+    cout << "Business Partners       : credibility >= " << BusinessRelations::REQUIRED_CREDIBILITY << endl;
+    cout << "PA                      : credibility >= " << PA::REQUIRED_CREDIBILITY << endl;
+    cout << "Cook, Guard, Servant    : any time" << endl;
+    cout << "Viewing the Scrabble board does NOT use a turn." << endl;
+    cout << "======================================================" << endl;
+    pressEnterToContinue();
+}
+
+
+// ---------------- Module 2 : game initialization ----------------
+
+// Reads rules.txt. If the file is missing or corrupted, the default
+// values of GameRules are used and the game still works.
+void GameEngine::loadRules()
+{
+    try
+    {
+        rules = GameFileReader::readRules();
+    }
+    catch (GameException& error)
+    {
+        cout << error.getFullMessage() << endl;
+        cout << "The default rules will be used." << endl;
+        rules = GameRules();          // fresh object = default values
+    }
+}
+
+// Picks a random line (profile) of clue.txt and reads its 2 words
+void GameEngine::chooseRandomCulprit()
+{
+    int totalProfiles = GameFileReader::countProfiles();
+
+    if (totalProfiles < 1)
+    {
+        throw FileCorruptedException(CLUE_FILE, "it has no culprit profiles.");
+    }
+    if (totalProfiles > GameFileReader::TOTAL_PROFILES)
+    {
+        totalProfiles = GameFileReader::TOTAL_PROFILES;
+    }
+
+    profileNumber = rand() % totalProfiles + 1;      // 1 to 7
+    GameFileReader::readClueProfile(profileNumber, culpritRole, targetWord1, targetWord2);
+}
+
+// Sets isCulprit = true on the character whose role matches the culprit.
+// isCulprit is PROTECTED in Character. GameEngine can change it directly
+// only because it is a FRIEND class of Character (Module 11).
+void GameEngine::markCulprit()
+{
+    bool culpritFound = false;
+
+    for (int i = 0; i < peopleCount; i++)
+    {
+        if (people[i]->characterRole == culpritRole)
+        {
+            people[i]->isCulprit = true;
+            culpritFound = true;
+        }
+        else
+        {
+            people[i]->isCulprit = false;
+        }
+    }
+
+    if (!culpritFound)
+    {
+        throw FileCorruptedException(CHARACTERS_FILE, "no person has the role \"" + culpritRole + "\".");
+    }
+}
+
+// Deletes the character objects made by GameFileReader::loadCharacters()
+void GameEngine::freePeople()
+{
+    for (int i = 0; i < peopleCount; i++)
+    {
+        delete people[i];
+        people[i] = nullptr;
+    }
+    peopleCount = 0;
+}
+
+// [1] New Game
+void GameEngine::startNewGame()
+{
+    clearScreen();
+    cout << "======================================================" << endl;
+    cout << "            THE LOCKER HEIST - NEW GAME" << endl;
+    cout << "======================================================" << endl;
+
+    string playerName = readDetectiveName();
+    loadRules();
+    chooseRandomCulprit();
+
+    // A FRESH detective, cottage and board for every new game
+    detective = Detective(playerName, rules.startingCredibility);
+    cottage = Cottage();
+    scrabble = Scrabble();
+    finalClueRack = TileRack(16);
+
+    // Load the letters of the selected culprit from the files
+    scrabble.setTargetWords(targetWord1, targetWord2);
+    GameFileReader::loadLocations(cottage, profileNumber);
+
+    freePeople();
+    peopleCount = GameFileReader::loadCharacters(people, MAX_PEOPLE, profileNumber);
+    markCulprit();
+
+    state = STATE_PLAYING;
+
+    cout << "\nA culprit has been secretly chosen. The game begins!" << endl;
+    cout << "Max turns: " << rules.maxTurns
+        << "  |  Starting credibility: " << rules.startingCredibility << endl;
+    cout << "WIN : " << replaceUnderscores(rules.winCondition) << endl;
+    cout << "LOSE: " << replaceUnderscores(rules.loseCondition) << endl;
+    cout << endl;
+    showGameStatus();
+
+    // ------------------------------------------------------------------
+    // TEMPORARY (until Module 13): the Game Menu is not written yet, so we
+    // only show who the culprit is, to check that initialization works.
+    // These lines will be removed in the next step.
+    // ------------------------------------------------------------------
+    cout << "\n[TEST ONLY] Culprit profile " << profileNumber << ": " << culpritRole
+        << "  (" << targetWord1 << " + " << targetWord2 << ")" << endl;
+    for (int i = 0; i < peopleCount; i++)
+    {
+        if (people[i]->getIsCulprit())
+        {
+            cout << "[TEST ONLY] isCulprit = true for " << people[i]->getName()
+                << " (" << people[i]->getNationality() << ")" << endl;
+        }
+    }
+    cout << "[TEST ONLY] The Game Menu will be added in Module 13." << endl;
+
+    state = STATE_MENU;
+    pressEnterToContinue();
+}
+
+// Shows the detective's status, the racks and the board (like the sample output)
+void GameEngine::showGameStatus() const
+{
+    cout << "Detective: " << detective.getName()
+        << "  |  Credibility: " << detective.getCredibility()
+        << "  |  Turns used: " << detective.getTurns() << " / " << rules.maxTurns << endl;
+    detective.displayRacks();
+    cout << scrabble;
+}
+
+
+// ---------------- The main loop ----------------
+
+// Runs the whole program: title, then the main menu until Exit
+void GameEngine::run()
+{
+    showTitle();
+    state = STATE_MENU;
+
+    while (state != STATE_EXIT)
+    {
+        clearScreen();
+        showMainMenu();
+
+        try
+        {
+            int choice = readNumber(MENU_NEW_GAME, MENU_EXIT);
+
+            // The number typed by the user becomes a MenuChoice enum value
+            switch ((MenuChoice)choice)
+            {
+            case MENU_NEW_GAME:
+                startNewGame();
+                break;
+            case MENU_LEADERBOARD:
+                showLeaderBoard();
+                break;
+            case MENU_ABOUT:
+                showAbout();
+                break;
+            case MENU_RULES:
+                showRules();
+                break;
+            case MENU_EXIT:
+                state = STATE_EXIT;
+                break;
+            }
+        }
+        catch (FileNotFoundException& error)
+        {
+            // A game file is missing: the game cannot start, back to the menu
+            cout << error.getFullMessage() << endl;
+            cout << "Please put all the .txt files in the project folder." << endl;
+            state = STATE_MENU;
+            pressEnterToContinue();
+        }
+        catch (GameException& error)
+        {
+            // Wrong menu input or corrupted data: show it and ask again
+            cout << error.getFullMessage() << endl;
+            state = STATE_MENU;
+            pressEnterToContinue();
+        }
+    }
+
+    clearScreen();
+    cout << "Thank you for playing THE LOCKER HEIST. Goodbye, Detective!" << endl;
+}
