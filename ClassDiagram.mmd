@@ -1,0 +1,374 @@
+classDiagram
+    direction TB
+
+    %% ================= ENUMS AND STRUCTS (Module 1, 6) =================
+    class WordRow {
+        <<enumeration>>
+        WORD_1
+        WORD_2
+    }
+    class GameState {
+        <<enumeration>>
+        STATE_MENU
+        STATE_PLAYING
+        STATE_WON
+        STATE_LOST
+        STATE_EXIT
+    }
+    class MenuChoice {
+        <<enumeration>>
+        MENU_NEW_GAME = 1
+        MENU_LEADERBOARD
+        MENU_ABOUT
+        MENU_RULES
+        MENU_EXIT
+    }
+    class Tile {
+        <<struct>>
+        +char tileLetter
+        +bool filled
+        +operator==(Tile) bool
+        +operator!=(Tile) bool
+        +friend operator≪(ostream, Tile) ostream
+        +friend operator≫(istream, Tile) istream
+    }
+    class Clue {
+        <<struct>>
+        +char clueLetter
+        +int cluePosition
+        +WordRow clueRow
+    }
+    class Location {
+        <<struct>>
+        +string locName
+        +char letterClueLoc
+        +int boardPosLoc
+        +WordRow locRow
+        +bool locSearchFlag
+        +friend operator≪(ostream, Location) ostream
+        +friend operator≫(istream, Location) istream
+    }
+    class GameRules {
+        <<struct>>
+        +int maxTurns
+        +int startingCredibility
+        +int wrongTurnPenalty
+        +int wrongWordPenalty
+        +string winCondition
+        +string loseCondition
+    }
+
+    %% ================= TEMPLATE (Module 8) =================
+    class DynamicArray~T~ {
+        -T* data
+        -int size
+        +DynamicArray(int arraySize)
+        +DynamicArray(DynamicArray other)
+        +operator=(DynamicArray other) DynamicArray
+        +~DynamicArray()
+        +operator[](int index) T
+        +getSize() int
+    }
+
+    %% ================= EXCEPTIONS (Module 7) =================
+    class GameException {
+        #string message
+        +GameException(string errorMessage)
+        +getMessage() string
+        +getErrorType() string
+        +getFullMessage() string
+        +~GameException()
+    }
+    class InvalidInputException { +getErrorType() string }
+    class InvalidPositionException { +getErrorType() string }
+    class SlotFilledException { +getErrorType() string }
+    class WordIncompleteException { +getErrorType() string }
+    class WordCompleteException { +getErrorType() string }
+    class InvalidWordException { +getErrorType() string }
+    class RackFullException { +getErrorType() string }
+    class RackEmptyException { +getErrorType() string }
+    class AlreadyVisitedException { +getErrorType() string }
+    class InterviewDeniedException { +getErrorType() string }
+    class FileNotFoundException { +getErrorType() string }
+    class FileCorruptedException { +getErrorType() string }
+
+    %% ================= CHARACTERS (Module 3, 9) =================
+    class Character {
+        <<abstract>>
+        #string characterName
+        #string characterRole
+        #string nationality
+        #bool isCulprit
+        #bool interviewed
+        #displayBasicInfo() void
+        +Character(string name, string role, string nationality)
+        +~Character()
+        +getName() string
+        +getRole() string
+        +getNationality() string
+        +getIsCulprit() bool
+        +isInterviewed() bool
+        +setName(string) void
+        +setNationality(string) void
+        +setInterviewed(bool) void
+        +getRequiredCredibility() int
+        +canBeInterviewed(int credibility) bool
+        +getClue() Clue
+        +canBeAccused() bool
+        +display()* void
+        +friend operator≪(ostream, Character) ostream
+        +friend operator≫(istream, Character) istream
+    }
+    class Victim {
+        -WordRow clueRowChar
+        -char letterClueChar
+        -int boardPosChar
+        +int REQUIRED_CREDIBILITY = 80$
+        +getLetter() char
+        +getPosition() int
+        +getRow() WordRow
+        +getClue() Clue
+        +getRequiredCredibility() int
+        +display() void
+    }
+    class Detective {
+        -int credibility
+        -int turns
+        -string solvedWords
+        -TileRack word1Rack
+        -TileRack word2Rack
+        +getCredibility() int
+        +getTurns() int
+        +getSolvedWords() string
+        +getRack(WordRow row) TileRack
+        +setTurns(int) void
+        +loseCredibility(int amount) void
+        +addSolvedWord(string word) void
+        +collectClue(Clue clue) void
+        +displayRacks() void
+        +display() void
+    }
+    class Suspect {
+        <<abstract>>
+        #WordRow clueRowChar
+        #char letterClueChar
+        #int boardPosChar
+        +getLetter() char
+        +getPosition() int
+        +getRow() WordRow
+        +getClue() Clue
+        +canBeAccused() bool
+        +display()* void
+    }
+    class HouseHelp {
+        +int REQUIRED_CREDIBILITY = 0$
+        +getRequiredCredibility() int
+    }
+    class BusinessRelations {
+        +int REQUIRED_CREDIBILITY = 50$
+        +getRequiredCredibility() int
+    }
+    class CloseRelations {
+        +int REQUIRED_CREDIBILITY = 75$
+        +getRequiredCredibility() int
+    }
+    class Cook { +display() void }
+    class Guard { +display() void }
+    class Servant { +display() void }
+    class Partner { +display() void }
+    class OwnerChild { +display() void }
+    class PA {
+        +int REQUIRED_CREDIBILITY = 35$
+        +getRequiredCredibility() int
+        +display() void
+    }
+
+    %% ================= BOARDS AND RACK (Module 4, 5, 11) =================
+    class TileRack {
+        -DynamicArray~Tile~ tiles
+        -DynamicArray~int~ positions
+        -int capacity
+        -int count
+        +TileRack(int rackCapacity)
+        +TileRack(TileRack other)
+        +operator=(TileRack other) TileRack
+        +~TileRack()
+        +addTile(Clue clue) void
+        +removeLastTile() char
+        +isFull() bool
+        +isEmpty() bool
+        +getCount() int
+        +getCapacity() int
+        +hasPosition(int) bool
+        +getLetterAt(int) char
+        +getPositionAt(int) int
+        +getLettersInOrder() string
+        +getLettersByPosition() string
+        +display() void
+        +operator+(TileRack other) TileRack
+    }
+    class Cottage {
+        -DynamicArray~Location~ locations
+        -checkLocationNumber(int) void
+        +int TOTAL_LOCATIONS = 7$
+        +Cottage()
+        +Cottage(Cottage other)
+        +operator=(Cottage other) Cottage
+        +~Cottage()
+        +setLocation(int number, string name, char letter, int position) void
+        +searchLocation(int number) Clue
+        +isSearched(int number) bool
+        +getLocationName(int number) string
+        +getLocationCount() int
+        +getSearchedCount() int
+        +displayLocations() void
+    }
+    class Scrabble {
+        -DynamicArray~DynamicArray~Tile~~ board
+        -string targetWord1
+        -string targetWord2
+        -checkPosition(WordRow, int) void
+        +int ROW_COUNT = 2$
+        +int WORD1_LENGTH = 7$
+        +int WORD2_LENGTH = 8$
+        +Scrabble()
+        +Scrabble(Scrabble other)
+        +operator=(Scrabble other) Scrabble
+        +~Scrabble()
+        +setTargetWords(string, string) void
+        +placeLetter(Clue clue) void
+        +revealLetter(WordRow, int) char
+        +getRowLength(WordRow) int
+        +isSlotFilled(WordRow, int) bool
+        +isRowComplete(WordRow) bool
+        +getFilledCount(WordRow) int
+        +getPlacedWord(WordRow) string
+        +getTargetWord(WordRow) string
+        +isWordCorrect(WordRow, string) bool
+        +displayWord(WordRow) void
+        +displayBoard() void
+        +friend operator≪(ostream, Scrabble) ostream
+        +friend operator≫(istream, Scrabble) istream
+    }
+
+    %% ================= FILES AND SCORES (Module 6) =================
+    class GameFileReader {
+        -checkProfileNumber(int)$ void
+        -createCharacter(string, string, string, char, int)$ Character
+        +int TOTAL_PROFILES = 7$
+        +countProfiles()$ int
+        +readClueProfile(int, string, string, string)$ void
+        +loadLocations(Cottage, int)$ void
+        +loadCharacters(Character[], int, int)$ int
+        +readRules()$ GameRules
+        +showTextFile(string)$ void
+    }
+    class ScoreBoard {
+        -string fileName
+        -getTodayDate() string
+        -fileHasData() bool
+        +ScoreBoard(string scoreFileName)
+        +addScore(string, bool, int, int, string) void
+        +displayScores() void
+    }
+
+    %% ================= ENGINE (Module 2, 12, 13, 14) =================
+    class GameEngine {
+        <<singleton>>
+        -GameEngine instance$
+        -Detective detective
+        -Cottage cottage
+        -Scrabble scrabble
+        -TileRack finalClueRack
+        -Character people[8]
+        -int peopleCount
+        -ScoreBoard scoreBoard
+        -GameRules rules
+        -GameState state
+        -int profileNumber
+        -string culpritRole
+        -string targetWord1
+        -string targetWord2
+        -bool word1Solved
+        -bool word2Solved
+        -GameEngine()
+        -~GameEngine()
+        -startNewGame() void
+        -playGame() void
+        -visitLocation() bool
+        -interviewPerson() bool
+        -formWord() bool
+        -accuseSuspect() bool
+        -finishGame() void
+        -markCulprit() void
+        -chooseRandomCulprit() void
+        -loadRules() void
+        +getInstance()$ GameEngine
+        +destroyInstance()$ void
+        +setScoreBoard(ScoreBoard board) void
+        +run() void
+    }
+
+    %% ================= INHERITANCE =================
+    Character <|-- Victim
+    Character <|-- Detective
+    Character <|-- Suspect
+    Suspect <|-- HouseHelp
+    Suspect <|-- BusinessRelations : virtual
+    Suspect <|-- CloseRelations : virtual
+    HouseHelp <|-- Cook
+    HouseHelp <|-- Guard
+    HouseHelp <|-- Servant
+    BusinessRelations <|-- Partner
+    BusinessRelations <|-- PA
+    CloseRelations <|-- OwnerChild
+    CloseRelations <|-- PA
+
+    GameException <|-- InvalidInputException
+    GameException <|-- InvalidPositionException
+    GameException <|-- SlotFilledException
+    GameException <|-- WordIncompleteException
+    GameException <|-- WordCompleteException
+    GameException <|-- InvalidWordException
+    GameException <|-- RackFullException
+    GameException <|-- RackEmptyException
+    GameException <|-- AlreadyVisitedException
+    GameException <|-- InterviewDeniedException
+    GameException <|-- FileNotFoundException
+    GameException <|-- FileCorruptedException
+
+    %% ================= COMPOSITION (filled diamond) =================
+    GameEngine *-- Detective
+    GameEngine *-- Cottage
+    GameEngine *-- Scrabble
+    GameEngine *-- TileRack : finalClueRack
+    GameEngine *-- "8" Character : people
+    GameEngine *-- GameRules
+    Detective *-- "2" TileRack : word1Rack, word2Rack
+    Scrabble *-- "15" Tile : board
+
+    %% ================= AGGREGATION (hollow diamond) =================
+    Cottage o-- "7" Location
+    TileRack o-- Tile
+
+    %% ================= ASSOCIATION (plain arrow) =================
+    GameEngine --> ScoreBoard
+
+    %% ================= FRIEND and DEPENDENCY (dashed arrow) =================
+    GameEngine ..> Character : «friend»
+    GameEngine ..> GameFileReader : uses
+    GameEngine ..> GameException : throws / catches
+    Scrabble ..> GameException : throws
+    TileRack ..> GameException : throws
+    Cottage ..> GameException : throws
+    Cottage ..> Clue : creates
+    Character ..> Clue : creates
+    Scrabble ..> Clue : uses
+    TileRack ..> Clue : uses
+    Cottage ..> DynamicArray : uses
+    Scrabble ..> DynamicArray : uses
+    TileRack ..> DynamicArray : uses
+    GameFileReader ..> GameRules : creates
+    GameEngine ..> GameState
+    GameEngine ..> MenuChoice
+    Clue ..> WordRow

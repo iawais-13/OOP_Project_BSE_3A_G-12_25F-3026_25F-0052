@@ -1,18 +1,6 @@
-// =====================================================================
-//  File      : heist.cpp
-//  Project   : THE LOCKER HEIST - A Detective Game backed by OOP Principles
-//  Purpose   : This is the IMPLEMENTATION file. It contains the bodies
-//              of all functions that were declared in heist.h
-// =====================================================================
-
 #include "heist.h"
 
-
-// =====================================================================
-//  HELPER FUNCTIONS (for enums)
-// =====================================================================
-
-// Converts a WordRow value into text, e.g. WORD_1 -> "Word 1"
+// Converts a wordrow value into text
 string wordRowToText(WordRow row)
 {
     if (row == WORD_1)
@@ -22,7 +10,7 @@ string wordRowToText(WordRow row)
     return "Word 2";
 }
 
-// Converts a GameState value into text so it can be printed
+// converts a gamestate value into text so it can be printed
 string gameStateToText(GameState state)
 {
     switch (state)
@@ -42,7 +30,7 @@ string gameStateToText(GameState state)
     }
 }
 
-// Converts a MenuChoice value into the text shown on the Main Menu
+// converts a menuchoice value into the text shown on the main menu
 string menuChoiceToText(MenuChoice choice)
 {
     switch (choice)
@@ -62,33 +50,25 @@ string menuChoiceToText(MenuChoice choice)
     }
 }
 
-
-// =====================================================================
-//  MODULE 7 : EXCEPTION HANDLING
-// =====================================================================
-
-// ---------------- Base class : GameException ----------------
-
-// Constructor: saves the error message
+// constructor, saves the error message
 GameException::GameException(string errorMessage)
 {
     message = errorMessage;
 }
 
-// Returns only the error details
+// returns only the error details
 string GameException::getMessage() const
 {
     return message;
 }
 
-// Base class name. Derived classes override this function.
+// base class name. derived classes override this function.
 string GameException::getErrorType() const
 {
     return "Game Error";
 }
 
-// Joins the error type and the message, e.g. "[Rack Full] The rack ..."
-// getErrorType() is virtual, so the derived class version is called here.
+// Joins the error type and the message
 string GameException::getFullMessage() const
 {
     return "[" + getErrorType() + "] " + message;
@@ -99,13 +79,8 @@ GameException::~GameException()
 {
 }
 
-
-// ---------------- Derived exception classes ----------------
-// Each constructor builds its own message and passes it to the
-// base class constructor (GameException) using the initializer list.
-
-InvalidInputException::InvalidInputException(string details)
-    : GameException("Invalid input: " + details)
+// base class constructor gameexception using the initializer list.
+InvalidInputException::InvalidInputException(string details) : GameException("Invalid input: " + details)
 {
 }
 
@@ -114,11 +89,7 @@ string InvalidInputException::getErrorType() const
     return "Invalid Input";
 }
 
-
-InvalidPositionException::InvalidPositionException(int position, int maxPosition)
-    : GameException("Position " + to_string(position) +
-        " is not valid. Please choose between 1 and " +
-        to_string(maxPosition) + ".")
+InvalidPositionException::InvalidPositionException(int position, int maxPosition) : GameException("Position " + to_string(position) + " is not valid. Please choose between 1 and " +to_string(maxPosition) + ".")
 {
 }
 
@@ -127,10 +98,7 @@ string InvalidPositionException::getErrorType() const
     return "Invalid Position";
 }
 
-
-SlotFilledException::SlotFilledException(int position)
-    : GameException("Slot " + to_string(position) +
-        " on the board is already filled.")
+SlotFilledException::SlotFilledException(int position): GameException("Slot " + to_string(position) + " on the board is already filled.")
 {
 }
 
@@ -139,10 +107,7 @@ string SlotFilledException::getErrorType() const
     return "Slot Filled";
 }
 
-
-WordIncompleteException::WordIncompleteException(WordRow row)
-    : GameException(wordRowToText(row) +
-        " is not complete yet. Collect all its letters first.")
+WordIncompleteException::WordIncompleteException(WordRow row) : GameException(wordRowToText(row) +" is not complete yet. Collect all its letters first.")
 {
 }
 
@@ -151,10 +116,7 @@ string WordIncompleteException::getErrorType() const
     return "Word Incomplete";
 }
 
-
-WordCompleteException::WordCompleteException(WordRow row)
-    : GameException(wordRowToText(row) +
-        " is already complete. No more letters can be placed.")
+WordCompleteException::WordCompleteException(WordRow row): GameException(wordRowToText(row) + " is already complete. No more letters can be placed.")
 {
 }
 
@@ -163,9 +125,7 @@ string WordCompleteException::getErrorType() const
     return "Word Complete";
 }
 
-
-InvalidWordException::InvalidWordException(string typedWord)
-    : GameException("\"" + typedWord + "\" is not the correct word.")
+InvalidWordException::InvalidWordException(string typedWord) : GameException("\"" + typedWord + "\" is not the correct word.")
 {
 }
 
@@ -174,9 +134,7 @@ string InvalidWordException::getErrorType() const
     return "Wrong Word";
 }
 
-
-RackFullException::RackFullException()
-    : GameException("The tile rack is full. No more letters can be added.")
+RackFullException::RackFullException() : GameException("The tile rack is full. No more letters can be added.")
 {
 }
 
@@ -185,9 +143,7 @@ string RackFullException::getErrorType() const
     return "Rack Full";
 }
 
-
-RackEmptyException::RackEmptyException()
-    : GameException("The tile rack is empty. There is no letter to remove.")
+RackEmptyException::RackEmptyException() : GameException("The tile rack is empty. There is no letter to remove.")
 {
 }
 
@@ -196,10 +152,7 @@ string RackEmptyException::getErrorType() const
     return "Rack Empty";
 }
 
-
-AlreadyVisitedException::AlreadyVisitedException(string placeOrPerson)
-    : GameException("The clue from " + placeOrPerson +
-        " has already been collected.")
+AlreadyVisitedException::AlreadyVisitedException(string placeOrPerson): GameException("The clue from " + placeOrPerson + " has already been collected.")
 {
 }
 
@@ -208,10 +161,7 @@ string AlreadyVisitedException::getErrorType() const
     return "Already Visited";
 }
 
-
-InterviewDeniedException::InterviewDeniedException(string personName, int requiredCredibility)
-    : GameException(personName + " refuses to talk. You need at least " +
-        to_string(requiredCredibility) + " credibility.")
+InterviewDeniedException::InterviewDeniedException(string personName, int requiredCredibility) : GameException(personName + " refuses to talk. You need at least " +to_string(requiredCredibility) + " credibility.")
 {
 }
 
@@ -220,9 +170,7 @@ string InterviewDeniedException::getErrorType() const
     return "Interview Denied";
 }
 
-
-FileNotFoundException::FileNotFoundException(string fileName)
-    : GameException("The file \"" + fileName + "\" was not found.")
+FileNotFoundException::FileNotFoundException(string fileName) : GameException("The file \"" + fileName + "\" was not found.")
 {
 }
 
@@ -231,9 +179,7 @@ string FileNotFoundException::getErrorType() const
     return "File Not Found";
 }
 
-
-FileCorruptedException::FileCorruptedException(string fileName, string details)
-    : GameException("The file \"" + fileName + "\" is corrupted: " + details)
+FileCorruptedException::FileCorruptedException(string fileName, string details) : GameException("The file \"" + fileName + "\" is corrupted: " + details)
 {
 }
 
@@ -242,15 +188,6 @@ string FileCorruptedException::getErrorType() const
     return "File Corrupted";
 }
 
-
-// =====================================================================
-//  MODULE 3 : CHARACTER HIERARCHY  (Part A)
-// =====================================================================
-
-// ---------------- Class: Character ----------------
-
-// Constructor: saves the common data. Nobody is the culprit at the start;
-// the GameEngine will select the culprit later.
 Character::Character(string name, string role, string nationalityText)
 {
     characterName = name;
@@ -259,13 +196,12 @@ Character::Character(string name, string role, string nationalityText)
     isCulprit = false;
     interviewed = false;    // nobody has been interviewed at the start
 }
-
-// Virtual destructor (no heap memory in Character itself)
+// Virtual destructor
 Character::~Character()
 {
 }
 
-// Prints the common details. Used by every child's display().
+// Prints the common details. Used by every childs display().
 void Character::displayBasicInfo() const
 {
     cout << "Name        : " << characterName << endl;
@@ -313,38 +249,32 @@ void Character::setInterviewed(bool value)
     interviewed = value;
 }
 
-// Base version: no condition (0). Child classes override this.
+// base version
 int Character::getRequiredCredibility() const
 {
     return 0;
 }
 
-// Checks the condition with the help of the virtual function above.
-// The correct child version of getRequiredCredibility() is called at runtime.
+// Checks the condition with the help of the virtual function above
 bool Character::canBeInterviewed(int credibility) const
 {
     return credibility >= getRequiredCredibility();
 }
 
-// Base version: returns an empty clue (used by the Detective)
+// base version returns an empty clue 
 Clue Character::getClue() const
 {
     Clue emptyClue;
     return emptyClue;
 }
 
-// Base version: a Character cannot be accused (Victim, Detective)
+// base version, a Character cannot be accused 
 bool Character::canBeAccused() const
 {
     return false;
 }
 
-
-// ---------------- Class: Victim ----------------
-
-// The role is always "Victim" and the letter always belongs to Word 2
-Victim::Victim(string name, string nationalityText, char letter, int position)
-    : Character(name, "Victim", nationalityText)
+Victim::Victim(string name, string nationalityText, char letter, int position): Character(name, "Victim", nationalityText)
 {
     clueRowChar = WORD_2;
     letterClueChar = letter;
@@ -366,7 +296,7 @@ WordRow Victim::getRow() const
     return clueRowChar;
 }
 
-// Packs the letter, position and row into a Clue (the carrier)
+// packs the letter, position and row into a clue
 Clue Victim::getClue() const
 {
     Clue victimClue;
@@ -390,28 +320,17 @@ void Victim::display() const
 }
 
 
-// ---------------- Class: Detective ----------------
-
-// The detective's role is "Detective" and default nationality is "Malay".
-// The racks are member objects, so they are built in the initializer list
-// with their sizes: 7 letters for Word 1 and 8 letters for Word 2.
-Detective::Detective(string name, int startingCredibility)
-    : Character(name, "Detective", "Malay"),
-    word1Rack(7),
-    word2Rack(8)
+Detective::Detective(string name, int startingCredibility) : Character(name, "Detective", "Malay"),word1Rack(7),word2Rack(8)
 {
     credibility = startingCredibility;
     turns = 0;
     solvedWords = "";
 }
 
-// The racks free their own heap memory in ~TileRack(), which runs
-// automatically after this destructor (composition).
 Detective::~Detective()
 {
 }
 
-// Returns a rack by const reference: the caller can read it, not change it
 const TileRack& Detective::getRack(WordRow row) const
 {
     if (row == WORD_1)
@@ -421,7 +340,7 @@ const TileRack& Detective::getRack(WordRow row) const
     return word2Rack;
 }
 
-// Puts the clue in the rack of its own word
+// puts the clue in the rack of its own word
 void Detective::collectClue(Clue clue)
 {
     if (clue.clueRow == WORD_1)
@@ -434,7 +353,7 @@ void Detective::collectClue(Clue clue)
     }
 }
 
-// Shows the letters of both racks
+// shows the letters of both racks
 void Detective::displayRacks() const
 {
     cout << "Rack (Word 1): ";
@@ -458,13 +377,13 @@ string Detective::getSolvedWords() const
     return solvedWords;
 }
 
-// GameEngine counts the turns and stores the new value here
+// gameEngine counts the turns and stores the new value here
 void Detective::setTurns(int turnCount)
 {
     turns = turnCount;
 }
 
-// Reduces credibility after a wrong step. It never becomes negative.
+// reduces credibility after a wrong step it never becomes negative
 void Detective::loseCredibility(int amount)
 {
     credibility = credibility - amount;
@@ -475,7 +394,7 @@ void Detective::loseCredibility(int amount)
     }
 }
 
-// Adds a correctly solved word, separated by a space
+// adds a correctly solved word, separated by a space
 void Detective::addSolvedWord(string word)
 {
     if (solvedWords == "")
@@ -498,11 +417,7 @@ void Detective::display() const
     displayRacks();
 }
 
-
-// ---------------- Class: Suspect ----------------
-
-Suspect::Suspect(string name, string role, string nationalityText, char letter, int position)
-    : Character(name, role, nationalityText)
+Suspect::Suspect(string name, string role, string nationalityText, char letter, int position): Character(name, role, nationalityText)
 {
     clueRowChar = WORD_2;
     letterClueChar = letter;
@@ -524,7 +439,7 @@ WordRow Suspect::getRow() const
     return clueRowChar;
 }
 
-// Packs the suspect's letter into a Clue (the carrier)
+// Packs the suspect letter into a clue
 Clue Suspect::getClue() const
 {
     Clue suspectClue;
@@ -534,33 +449,23 @@ Clue Suspect::getClue() const
     return suspectClue;
 }
 
-// All 7 suspects can be accused by the detective
+// all 7 suspects can be accused by the detective
 bool Suspect::canBeAccused() const
 {
     return true;
 }
 
-
-// ---------------- Class: HouseHelp ----------------
-
-HouseHelp::HouseHelp(string name, string role, string nationalityText, char letter, int position)
-    : Suspect(name, role, nationalityText, letter, position)
+HouseHelp::HouseHelp(string name, string role, string nationalityText, char letter, int position): Suspect(name, role, nationalityText, letter, position)
 {
 }
 
-// House Help can be interviewed at any time
+// house help can be interviewed at any time
 int HouseHelp::getRequiredCredibility() const
 {
     return REQUIRED_CREDIBILITY;   // 0
 }
 
-
-// ---------------- Classes: Cook, Guard, Servant ----------------
-// Each constructor fixes its own role name and passes the rest to HouseHelp.
-// Each class writes its OWN display() (method overriding).
-
-Cook::Cook(string name, string nationalityText, char letter, int position)
-    : HouseHelp(name, "Cook", nationalityText, letter, position)
+Cook::Cook(string name, string nationalityText, char letter, int position): HouseHelp(name, "Cook", nationalityText, letter, position)
 {
 }
 
@@ -572,8 +477,7 @@ void Cook::display() const
     cout << "Interview   : Allowed at any time" << endl;
 }
 
-Guard::Guard(string name, string nationalityText, char letter, int position)
-    : HouseHelp(name, "Guard", nationalityText, letter, position)
+Guard::Guard(string name, string nationalityText, char letter, int position): HouseHelp(name, "Guard", nationalityText, letter, position)
 {
 }
 
@@ -585,8 +489,7 @@ void Guard::display() const
     cout << "Interview   : Allowed at any time" << endl;
 }
 
-Servant::Servant(string name, string nationalityText, char letter, int position)
-    : HouseHelp(name, "Servant", nationalityText, letter, position)
+Servant::Servant(string name, string nationalityText, char letter, int position): HouseHelp(name, "Servant", nationalityText, letter, position)
 {
 }
 
@@ -598,20 +501,7 @@ void Servant::display() const
     cout << "Interview   : Allowed at any time" << endl;
 }
 
-
-// =====================================================================
-//  MODULE 3 : CHARACTER HIERARCHY  (Part B)
-// ---------------------------------------------------------------------
-//  IMPORTANT RULE OF VIRTUAL INHERITANCE:
-//  A virtual base class (Suspect) is always built by the LAST class in
-//  the chain (the object we actually create: Partner, OwnerChild or PA).
-//  That is why Partner, OwnerChild and PA call Suspect(...) directly,
-//  and the middle classes (BusinessRelations, CloseRelations) do not.
-// =====================================================================
-
-// ---------------- Class: BusinessRelations ----------------
-
-// Empty: the shared Suspect part is built by Partner or PA
+// empty ,  the shared suspect part is built by partner or PA
 BusinessRelations::BusinessRelations()
 {
 }
@@ -620,11 +510,7 @@ int BusinessRelations::getRequiredCredibility() const
 {
     return REQUIRED_CREDIBILITY;   // 50
 }
-
-
-// ---------------- Class: CloseRelations ----------------
-
-// Empty: the shared Suspect part is built by OwnerChild or PA
+// empoty,  the shared Suspect part is built by OwnerChild or PA
 CloseRelations::CloseRelations()
 {
 }
@@ -634,13 +520,7 @@ int CloseRelations::getRequiredCredibility() const
     return REQUIRED_CREDIBILITY;   // 75
 }
 
-
-// ---------------- Class: Partner ----------------
-// Suspect(...) is called here because it is a virtual base class.
-
-Partner::Partner(string name, string role, string nationalityText, char letter, int position)
-    : Suspect(name, role, nationalityText, letter, position),
-    BusinessRelations()
+Partner::Partner(string name, string role, string nationalityText, char letter, int position): Suspect(name, role, nationalityText, letter, position),BusinessRelations()
 {
 }
 
@@ -652,12 +532,7 @@ void Partner::display() const
     cout << "Interview   : Needs credibility >= " << getRequiredCredibility() << endl;
 }
 
-
-// ---------------- Class: OwnerChild ----------------
-
-OwnerChild::OwnerChild(string name, string nationalityText, char letter, int position)
-    : Suspect(name, "Child", nationalityText, letter, position),
-    CloseRelations()
+OwnerChild::OwnerChild(string name, string nationalityText, char letter, int position): Suspect(name, "Child", nationalityText, letter, position),CloseRelations()
 {
 }
 
@@ -669,21 +544,10 @@ void OwnerChild::display() const
     cout << "Interview   : Needs credibility >= " << getRequiredCredibility() << endl;
 }
 
-
-// ---------------- Class: PA (the diamond) ----------------
-// PA builds the ONE shared Suspect part itself, and then its two
-// parents. Because of virtual inheritance, Suspect is created only once.
-
-PA::PA(string name, string nationalityText, char letter, int position)
-    : Suspect(name, "PA", nationalityText, letter, position),
-    BusinessRelations(),
-    CloseRelations()
+PA::PA(string name, string nationalityText, char letter, int position): Suspect(name, "PA", nationalityText, letter, position),BusinessRelations(),CloseRelations()
 {
 }
 
-// PA has its own condition (35). Without this function the program
-// would not compile, because PA gets two different versions (50 and 75)
-// from its two parents.
 int PA::getRequiredCredibility() const
 {
     return REQUIRED_CREDIBILITY;   // 35
@@ -697,12 +561,6 @@ void PA::display() const
     cout << "Interview   : Needs credibility >= " << REQUIRED_CREDIBILITY << endl;
 }
 
-
-// =====================================================================
-//  HELPER FUNCTION : replaceUnderscores
-//  Goes through the text letter by letter and puts a space wherever
-//  it finds an underscore. "Bedroom_1" -> "Bedroom 1"
-// =====================================================================
 string replaceUnderscores(string text)
 {
     for (int i = 0; i < (int)text.length(); i++)
@@ -715,117 +573,31 @@ string replaceUnderscores(string text)
     return text;
 }
 
-
-// =====================================================================
-//  MODULE 4 : GAME BOARDS (DMA)  -  Part A : Cottage
-// =====================================================================
-
-// ---------------------------------------------------------------------
-//  OLD RAW DMA LOGIC (before Module 8: Templates)
-//  Kept as comments, as the manual asks. The new version is below.
-// ---------------------------------------------------------------------
-/*
-// Constructor: creates the array of 7 pointers, and then one empty
-// Location on the heap for every pointer.
-Cottage::Cottage()
+// Constructor ,  DynamicArray creates the 7 empty locations for us
+Cottage::Cottage(): locations(TOTAL_LOCATIONS)
 {
-    locations = new Location*[TOTAL_LOCATIONS];
-
-    for (int i = 0; i < TOTAL_LOCATIONS; i++)
-    {
-        locations[i] = new Location;
-    }
 }
 
-// Copy constructor: "Cottage copy = original;"
-// It must NOT share memory with the original, so we make a deep copy.
-Cottage::Cottage(const Cottage& other)
+// Copy constructor, "Cottage copy = original;" (deep copy)
+Cottage::Cottage(const Cottage& other): locations(other.locations)
 {
-    copyLocationsFrom(other);
 }
 
-// Assignment operator: "copy = original;" (both objects already exist)
 Cottage& Cottage::operator=(const Cottage& other)
 {
-    // Self-assignment check: "cottage = cottage;" must not delete itself
-    if (this != &other)
+    if (this != &other)               // self assignment check
     {
-        freeMemory();                 // 1. free the old memory
-        copyLocationsFrom(other);     // 2. make a deep copy of the other one
-    }
-    return *this;                     // 3. allows chaining: a = b = c;
-}
-
-// Destructor: called automatically when a Cottage object is destroyed
-Cottage::~Cottage()
-{
-    freeMemory();
-}
-
-// DEEP COPY: creates NEW memory and copies the VALUES into it.
-// (A shallow copy would only copy the pointer, and then both cottages
-// would point to the same memory -> deleting one would break the other.)
-void Cottage::copyLocationsFrom(const Cottage& other)
-{
-    locations = new Location*[TOTAL_LOCATIONS];
-
-    for (int i = 0; i < TOTAL_LOCATIONS; i++)
-    {
-        // new Location filled with a copy of the other location's data
-        locations[i] = new Location(*other.locations[i]);
-    }
-}
-
-// Deletes each location first, then the array of pointers itself
-void Cottage::freeMemory()
-{
-    if (locations != nullptr)
-    {
-        for (int i = 0; i < TOTAL_LOCATIONS; i++)
-        {
-            delete locations[i];
-            locations[i] = nullptr;
-        }
-
-        delete[] locations;
-        locations = nullptr;   // no dangling pointer
-    }
-}
-*/
-// ---------------------------------------------------------------------
-//  NEW TEMPLATE LOGIC (Module 8)
-// ---------------------------------------------------------------------
-
-// Constructor: DynamicArray creates the 7 empty locations for us
-Cottage::Cottage()
-    : locations(TOTAL_LOCATIONS)
-{
-}
-
-// Copy constructor: "Cottage copy = original;" (deep copy)
-// DynamicArray's own copy constructor makes new memory and copies the data.
-Cottage::Cottage(const Cottage& other)
-    : locations(other.locations)
-{
-}
-
-// Assignment operator: "copy = original;" (deep copy)
-Cottage& Cottage::operator=(const Cottage& other)
-{
-    if (this != &other)               // self-assignment check
-    {
-        locations = other.locations;  // DynamicArray's operator= does the deep copy
+        locations = other.locations;  // DynamicArray operator= does the deep copy
     }
     return *this;
 }
 
-// Destructor: nothing to delete here. ~DynamicArray() deletes every
-// location and the array itself automatically.
+// Destructor: nothing to delete here ~DynamicArray() deletes every  location and the array itself automatically.
 Cottage::~Cottage()
 {
 }
 
-// The player uses numbers 1 to 7. Anything else is an invalid position.
+// The player uses numbers 1 to 7 ,  anything else is an invalid position
 void Cottage::checkLocationNumber(int number) const
 {
     if (number < 1 || number > TOTAL_LOCATIONS)
@@ -834,7 +606,7 @@ void Cottage::checkLocationNumber(int number) const
     }
 }
 
-// Fills a location. Number 1 is stored at index 0, and so on.
+// fills a location,  Number 1 is stored at index 0 and so on
 void Cottage::setLocation(int number, string name, char letter, int position)
 {
     checkLocationNumber(number);
@@ -847,16 +619,11 @@ void Cottage::setLocation(int number, string name, char letter, int position)
     place.locSearchFlag = false;
 }
 
-// Searches a location: marks it as searched and gives back its clue.
-// Searching again is allowed (the player sees the same letter again).
 Clue Cottage::searchLocation(int number)
 {
     checkLocationNumber(number);
-
     Location& place = locations[number - 1];   // reference to the real location
     place.locSearchFlag = true;
-
-    // Clue is the carrier that takes the letter to the Scrabble board
     Clue foundClue;
     foundClue.clueLetter = place.letterClueLoc;
     foundClue.cluePosition = place.boardPosLoc;
@@ -881,7 +648,7 @@ int Cottage::getLocationCount() const
     return TOTAL_LOCATIONS;
 }
 
-// Counts how many locations have been searched so far
+// counts how many locations have been searched so far
 int Cottage::getSearchedCount() const
 {
     int count = 0;
@@ -895,27 +662,17 @@ int Cottage::getSearchedCount() const
     return count;
 }
 
-// Prints the location menu, e.g.  [3] Study Room  - NOT Searched
 void Cottage::displayLocations() const
 {
     cout << "====== Location Menu ======" << endl;
-
     for (int i = 0; i < TOTAL_LOCATIONS; i++)
     {
-        // Module 11: the overloaded << of Location prints name and status
         cout << "[" << (i + 1) << "] " << locations[i] << endl;
     }
-
     cout << "===========================" << endl;
 }
 
-
-// =====================================================================
-//  HELPER FUNCTION : toUpperCase
-//  Changes every small letter into a capital letter.
-//  In the ASCII table a small letter is 32 places after its capital,
-//  e.g. 'a' = 97 and 'A' = 65, so we subtract 32.
-// =====================================================================
+//  helper function
 string toUpperCase(string text)
 {
     for (int i = 0; i < (int)text.length(); i++)
@@ -928,111 +685,25 @@ string toUpperCase(string text)
     return text;
 }
 
-
-// =====================================================================
-//  MODULE 4 : GAME BOARDS (DMA)  -  Part B : Scrabble
-// =====================================================================
-
-// ---------------------------------------------------------------------
-//  OLD RAW DMA LOGIC (before Module 8: Templates)
-//  Kept as comments, as the manual asks. The new version is below.
-// ---------------------------------------------------------------------
-/*
-// Constructor: creates an empty jagged board
-Scrabble::Scrabble()
+// Constructor, makes the outer array with 2 rows, then gives each row
+// its own length
+// Every Tile starts empty because of the struct defaults
+Scrabble::Scrabble() : board(ROW_COUNT)
 {
     targetWord1 = "";
     targetWord2 = "";
-    createEmptyBoard();
+    board[WORD_1] = DynamicArray<Tile>(WORD1_LENGTH);   
+    board[WORD_2] = DynamicArray<Tile>(WORD2_LENGTH);   
 }
 
-// Copy constructor: "Scrabble copy = original;" (deep copy)
-Scrabble::Scrabble(const Scrabble& other)
-{
-    copyBoardFrom(other);
-}
-
-// Assignment operator: "copy = original;" (deep copy)
-Scrabble& Scrabble::operator=(const Scrabble& other)
-{
-    if (this != &other)          // self-assignment check
-    {
-        freeMemory();            // free old memory first
-        copyBoardFrom(other);    // then make a deep copy
-    }
-    return *this;
-}
-
-// Destructor: frees both rows and the board
-Scrabble::~Scrabble()
-{
-    freeMemory();
-}
-
-// Allocates the jagged array: 2 row pointers, then each row with its own size.
-// Every Tile starts as empty (' ' and false) because of the struct defaults.
-void Scrabble::createEmptyBoard()
-{
-    board = new Tile*[ROW_COUNT];
-    board[WORD_1] = new Tile[WORD1_LENGTH];   // row 1 -> 7 slots
-    board[WORD_2] = new Tile[WORD2_LENGTH];   // row 2 -> 8 slots
-}
-
-// DEEP COPY: new memory for both rows, then copy every tile one by one
-void Scrabble::copyBoardFrom(const Scrabble& other)
-{
-    targetWord1 = other.targetWord1;
-    targetWord2 = other.targetWord2;
-
-    createEmptyBoard();
-
-    for (int i = 0; i < WORD1_LENGTH; i++)
-    {
-        board[WORD_1][i] = other.board[WORD_1][i];
-    }
-    for (int i = 0; i < WORD2_LENGTH; i++)
-    {
-        board[WORD_2][i] = other.board[WORD_2][i];
-    }
-}
-
-// Deletes each row first, then the array of row pointers
-void Scrabble::freeMemory()
-{
-    if (board != nullptr)
-    {
-        delete[] board[WORD_1];
-        delete[] board[WORD_2];
-        delete[] board;
-        board = nullptr;          // no dangling pointer
-    }
-}
-*/
-// ---------------------------------------------------------------------
-//  NEW TEMPLATE LOGIC (Module 8)
-// ---------------------------------------------------------------------
-
-// Constructor: makes the outer array with 2 rows, then gives each row
-// its own length. Every Tile starts empty because of the struct defaults.
-Scrabble::Scrabble()
-    : board(ROW_COUNT)
-{
-    targetWord1 = "";
-    targetWord2 = "";
-
-    board[WORD_1] = DynamicArray<Tile>(WORD1_LENGTH);   // row 1 -> 7 slots
-    board[WORD_2] = DynamicArray<Tile>(WORD2_LENGTH);   // row 2 -> 8 slots
-}
-
-// Copy constructor (deep copy): DynamicArray copies both rows for us
-Scrabble::Scrabble(const Scrabble& other)
-    : board(other.board)
+// Copy constructor ,  DynamicArray copies both rows for us
+Scrabble::Scrabble(const Scrabble& other): board(other.board)
 {
     targetWord1 = other.targetWord1;
     targetWord2 = other.targetWord2;
 }
 
-// Assignment operator (deep copy)
+// Assignment operator 
 Scrabble& Scrabble::operator=(const Scrabble& other)
 {
     if (this != &other)          // self-assignment check
@@ -1044,13 +715,11 @@ Scrabble& Scrabble::operator=(const Scrabble& other)
     return *this;
 }
 
-// Destructor: nothing to delete here. ~DynamicArray() frees each row
-// and then the outer array automatically.
+// Destructor , nothing to delete here. ~DynamicArray() frees each row and then the outer array automatically.
 Scrabble::~Scrabble()
 {
 }
 
-// Row 1 accepts positions 1-7 and row 2 accepts positions 1-8
 void Scrabble::checkPosition(WordRow row, int position) const
 {
     int rowLength = getRowLength(row);
@@ -1061,8 +730,6 @@ void Scrabble::checkPosition(WordRow row, int position) const
     }
 }
 
-// Saves the correct words after checking their length.
-// A wrong length means clue.txt has wrong data.
 void Scrabble::setTargetWords(string word1, string word2)
 {
     if ((int)word1.length() != WORD1_LENGTH)
@@ -1073,15 +740,11 @@ void Scrabble::setTargetWords(string word1, string word2)
     {
         throw FileCorruptedException("clue.txt", "Word 2 \"" + word2 + "\" must have 8 letters.");
     }
-
     targetWord1 = toUpperCase(word1);
     targetWord2 = toUpperCase(word2);
 }
 
-// Places a letter on the board. Three checks are done first:
-//  1. the word (row) must not be complete already
-//  2. the position must be inside the row
-//  3. the slot must still be empty
+// places a letter on the board. Three checks are done first
 void Scrabble::placeLetter(Clue clue)
 {
     if (isRowComplete(clue.clueRow))
@@ -1090,20 +753,17 @@ void Scrabble::placeLetter(Clue clue)
     }
 
     checkPosition(clue.clueRow, clue.cluePosition);
-
     Tile& slot = board[clue.clueRow][clue.cluePosition - 1];   // position 1 -> index 0
 
     if (slot.filled)
     {
         throw SlotFilledException(clue.cluePosition);
     }
-
     slot.tileLetter = clue.clueLetter;
     slot.filled = true;
 }
 
-// Shows the letter that was placed at a position (used when the player
-// visits a place or a person again)
+// Shows the letter that was placed at a position ,used when the player visits a place or a person again
 char Scrabble::revealLetter(WordRow row, int position) const
 {
     checkPosition(row, position);
@@ -1139,13 +799,13 @@ int Scrabble::getFilledCount(WordRow row) const
     return count;
 }
 
-// A row is complete when every slot is filled
+// a row is complete when every slot is filled
 bool Scrabble::isRowComplete(WordRow row) const
 {
     return getFilledCount(row) == getRowLength(row);
 }
 
-// Joins the placed letters into a string, e.g. "GER_A_S" (empty = '_')
+// joins the placed letters into a string 
 string Scrabble::getPlacedWord(WordRow row) const
 {
     string word = "";
@@ -1172,26 +832,22 @@ string Scrabble::getTargetWord(WordRow row) const
     return targetWord2;
 }
 
-// The detective can type a word only when its row is complete.
-// Small letters are allowed, so both words are changed to capitals first.
+// The detective can type a word only when its row is complete
 bool Scrabble::isWordCorrect(WordRow row, string typedWord) const
 {
     if (isRowComplete(row) == false)
     {
         throw WordIncompleteException(row);
     }
-
     typedWord = toUpperCase(typedWord);
     string correctWord = getTargetWord(row);
 
-    // Different length -> it cannot be the same word
     if (typedWord.length() != correctWord.length())
     {
         return false;
     }
 
-    // Module 11: compare letter by letter with the overloaded != of Tile
-    // (each letter of the typed word against the letter from clue.txt)
+    // compare letter by letter 
     for (int i = 0; i < (int)correctWord.length(); i++)
     {
         Tile typedTile;
@@ -1208,14 +864,14 @@ bool Scrabble::isWordCorrect(WordRow row, string typedWord) const
     return true;
 }
 
-// Prints one row like:  Word 1: [G] [E] [ ] [M] [ ] [ ] [S]
+// prints one row 
 void Scrabble::displayWord(WordRow row) const
 {
     cout << "  " << wordRowToText(row) << ": ";
 
     for (int i = 0; i < getRowLength(row); i++)
     {
-        cout << board[row][i] << " ";     // Module 11: Tile's << prints [G]
+        cout << board[row][i] << " ";    
     }
 
     if (isRowComplete(row))
@@ -1225,118 +881,34 @@ void Scrabble::displayWord(WordRow row) const
     cout << endl;
 }
 
-// Prints the whole board (both rows) with the overloaded << of Scrabble
+// prints the whole board 
 void Scrabble::displayBoard() const
 {
     cout << *this;
 }
 
-
-// =====================================================================
-//  MODULE 5 : CLUE SYSTEM  -  TileRack
-// =====================================================================
-
-// ---------------------------------------------------------------------
-//  OLD RAW DMA LOGIC (before Module 8: Templates)
-//  Kept as comments, as the manual asks. The new version is below.
-// ---------------------------------------------------------------------
-/*
-// Constructor: creates two empty arrays of the given size
-TileRack::TileRack(int rackCapacity)
-{
-    if (rackCapacity < 1)
-    {
-        rackCapacity = 1;    // a rack must have space for at least one letter
-    }
-
-    capacity = rackCapacity;
-    count = 0;
-    tiles = new Tile[capacity];
-    positions = new int[capacity];
-
-    for (int i = 0; i < capacity; i++)
-    {
-        positions[i] = 0;    // 0 = no position yet
-    }
-}
-
-// Copy constructor: "TileRack copy = original;" (deep copy)
-TileRack::TileRack(const TileRack& other)
-{
-    copyRackFrom(other);
-}
-
-// Assignment operator: "copy = original;" (deep copy)
-TileRack& TileRack::operator=(const TileRack& other)
-{
-    if (this != &other)          // self-assignment check
-    {
-        freeMemory();
-        copyRackFrom(other);
-    }
-    return *this;
-}
-
-// Destructor: frees both arrays
-TileRack::~TileRack()
-{
-    freeMemory();
-}
-
-// DEEP COPY: new arrays of the same size, then copy every value
-void TileRack::copyRackFrom(const TileRack& other)
-{
-    capacity = other.capacity;
-    count = other.count;
-    tiles = new Tile[capacity];
-    positions = new int[capacity];
-
-    for (int i = 0; i < capacity; i++)
-    {
-        tiles[i] = other.tiles[i];
-        positions[i] = other.positions[i];
-    }
-}
-
-void TileRack::freeMemory()
-{
-    delete[] tiles;
-    delete[] positions;
-    tiles = nullptr;
-    positions = nullptr;
-}
-*/
-// ---------------------------------------------------------------------
-//  NEW TEMPLATE LOGIC (Module 8)
-// ---------------------------------------------------------------------
-
-// Constructor: the two DynamicArray members are created in the
-// initializer list with the rack's size (DynamicArray does the "new").
-TileRack::TileRack(int rackCapacity)
-    : tiles(rackCapacity), positions(rackCapacity)
+// constructor, the two DynamicArray members are created in the
+TileRack::TileRack(int rackCapacity): tiles(rackCapacity), positions(rackCapacity)
 {
     capacity = tiles.getSize();   // DynamicArray makes the size at least 1
     count = 0;
-
     for (int i = 0; i < capacity; i++)
     {
         positions[i] = 0;    // 0 = no position yet
     }
 }
 
-// Copy constructor (deep copy): DynamicArray's own copy constructor
-// copies the arrays, we only copy the two numbers.
-TileRack::TileRack(const TileRack& other)
-    : tiles(other.tiles), positions(other.positions)
+// Copy constructor , DynamicArray own copy constructor
+TileRack::TileRack(const TileRack& other) : tiles(other.tiles), positions(other.positions)
 {
     capacity = other.capacity;
     count = other.count;
 }
 
-// Assignment operator (deep copy): DynamicArray's operator= copies the arrays
+// Assignment operator 
 TileRack& TileRack::operator=(const TileRack& other)
 {
-    if (this != &other)          // self-assignment check
+    if (this != &other)        
     {
         tiles = other.tiles;
         positions = other.positions;
@@ -1346,41 +918,35 @@ TileRack& TileRack::operator=(const TileRack& other)
     return *this;
 }
 
-// Destructor: nothing to delete here. The DynamicArray members free
-// their own memory in ~DynamicArray().
+// Destructor, nothing to delete here. The DynamicArray members free their own memory in ~DynamicArray()
 TileRack::~TileRack()
 {
 }
 
 // Adds a letter at the end of the rack. Two checks first:
-//  1. the rack must not be full
-//  2. the same board position must not be collected twice
 void TileRack::addTile(Clue clue)
 {
     if (isFull())
     {
         throw RackFullException();
     }
-
     if (hasPosition(clue.cluePosition))
     {
         throw AlreadyVisitedException("position " + to_string(clue.cluePosition));
     }
-
     tiles[count].tileLetter = clue.clueLetter;
     tiles[count].filled = true;
     positions[count] = clue.cluePosition;
     count++;
 }
 
-// Removes the last letter (like taking the top plate from a pile)
+// Removes the last letter
 char TileRack::removeLastTile()
 {
     if (isEmpty())
     {
         throw RackEmptyException();
     }
-
     count--;
     char removedLetter = tiles[count].tileLetter;
 
@@ -1388,7 +954,6 @@ char TileRack::removeLastTile()
     tiles[count].tileLetter = ' ';
     tiles[count].filled = false;
     positions[count] = 0;
-
     return removedLetter;
 }
 
@@ -1443,7 +1008,7 @@ int TileRack::getPositionAt(int index) const
     return positions[index];
 }
 
-// Letters in the order they were collected, e.g. "RGA"
+// Letters in the order they were collected 
 string TileRack::getLettersInOrder() const
 {
     string letters = "";
@@ -1454,15 +1019,13 @@ string TileRack::getLettersInOrder() const
     return letters;
 }
 
-// Letters arranged by their board position. Missing letters are '_'.
-// Example: R at 3, G at 1, A at 5 in a rack of 7 -> "G_R_A__"
+// Letters arranged by their board position
 string TileRack::getLettersByPosition() const
 {
-    string word(capacity, '_');      // a string of '_' with the rack's length
-
+    string word(capacity, '_');     
     for (int i = 0; i < count; i++)
     {
-        int index = positions[i] - 1;          // position 1 -> index 0
+        int index = positions[i] - 1;          
         if (index >= 0 && index < capacity)
         {
             word[index] = tiles[i].tileLetter;
@@ -1471,7 +1034,7 @@ string TileRack::getLettersByPosition() const
     return word;
 }
 
-// Shows every letter with its position, or "(empty)"
+// Shows every letter with its position, or empty
 void TileRack::display() const
 {
     if (isEmpty())
@@ -1479,7 +1042,6 @@ void TileRack::display() const
         cout << "(empty)" << endl;
         return;
     }
-
     for (int i = 0; i < count; i++)
     {
         cout << "[" << tiles[i].tileLetter << " at " << positions[i] << "] ";
@@ -1487,46 +1049,26 @@ void TileRack::display() const
     cout << " (" << count << "/" << capacity << ")" << endl;
 }
 
-
-// =====================================================================
-//  MODULE 11 : OPERATOR OVERLOADING AND FRIEND FUNCTIONS
-// ---------------------------------------------------------------------
-//  OPERATOR OVERLOADING gives a new meaning to a C++ operator (==, +,
-//  <<, >>) for OUR OWN types, so the code reads like normal math:
-//      tile1 == tile2        rack1 + rack2        cout << scrabble
-//
-//  A FRIEND FUNCTION is not a member of the class, but the class allows
-//  it to use its private / protected data.
-//  Why are << and >> friends and not members?  In  "cout << tile"  the
-//  LEFT side is cout (an ostream), not our class. A member operator only
-//  works when our class is on the left side, so these operators are
-//  written outside the class and made friends.
-// =====================================================================
-
-// ---------------- Tile : == and != ----------------
-
 // Two tiles are equal when their letters are the same
 bool Tile::operator==(const Tile& other) const
 {
     return tileLetter == other.tileLetter;
 }
 
-// "Not equal" simply uses the == operator above
+// Not equal simply uses the == operator above
 bool Tile::operator!=(const Tile& other) const
 {
     return !(*this == other);
 }
 
-// ---------------- Tile : << and >> ----------------
-
-// Prints a tile like  [G]  or  [ ]
+// Prints a tile 
 ostream& operator<<(ostream& out, const Tile& tile)
 {
     out << "[" << tile.tileLetter << "]";
-    return out;      // returning the stream allows: cout << a << b << c;
+    return out;      
 }
 
-// Reads one letter into a tile (small letters become capital)
+// Reads one letter into a tile 
 istream& operator>>(istream& in, Tile& tile)
 {
     char letter;
@@ -1542,9 +1084,7 @@ istream& operator>>(istream& in, Tile& tile)
     return in;
 }
 
-// ---------------- Location : << and >> ----------------
-
-// Prints a location like  "Study Room   - NOT Searched"
+// Prints a location 
 ostream& operator<<(ostream& out, const Location& place)
 {
     string nameToShow = replaceUnderscores(place.locName);
@@ -1555,7 +1095,6 @@ ostream& operator<<(ostream& out, const Location& place)
     {
         out << " ";
     }
-
     if (place.locSearchFlag)
     {
         out << "- Searched";
@@ -1567,7 +1106,7 @@ ostream& operator<<(ostream& out, const Location& place)
     return out;
 }
 
-// Reads a location as:  name letter position   (e.g.  Garden M 4)
+// Reads a location 
 istream& operator>>(istream& in, Location& place)
 {
     in >> place.locName >> place.letterClueLoc >> place.boardPosLoc;
@@ -1582,53 +1121,38 @@ istream& operator>>(istream& in, Location& place)
     return in;
 }
 
-// ---------------- Character : << and >> ----------------
-
-// Prints any character. display() is VIRTUAL, so for a Cook object the
-// Cook version runs, for a PA object the PA version runs (polymorphism),
-// even though the parameter type is Character&.
-// (display() writes to cout, so this operator is meant to be used with cout.)
+// Prints any character
 ostream& operator<<(ostream& out, const Character& person)
 {
     person.display();
     return out;
 }
 
-// Reads a new name and nationality. Being a friend, this function can
-// change the protected data of Character directly.
+// Reads a new name and nationality, being a friend this function can change the protected data of Character directly.
 istream& operator>>(istream& in, Character& person)
 {
     in >> person.characterName >> person.nationality;
     return in;
 }
 
-// ---------------- TileRack : + ----------------
-
-// Joins two racks into a NEW rack:  letters of this rack (in board order),
-// one space, then the letters of the other rack (in board order).
-// "GERMANS" + "SHEPHERD" -> "GERMANS SHEPHERD" (16 tiles)
-// Neither of the two racks is changed.
+// Joins two racks into a new rack 
 TileRack TileRack::operator+(const TileRack& other) const
 {
     string fullClue = getLettersByPosition() + " " + other.getLettersByPosition();
-
     TileRack mergedRack((int)fullClue.length());
 
     for (int i = 0; i < (int)fullClue.length(); i++)
     {
         Clue letterClue;
         letterClue.clueLetter = fullClue[i];
-        letterClue.cluePosition = i + 1;     // positions 1, 2, 3 ... in the merged clue
-        letterClue.clueRow = WORD_1;         // not used for the merged rack
+        letterClue.cluePosition = i + 1;     
+        letterClue.clueRow = WORD_1;         
         mergedRack.addTile(letterClue);
     }
-
     return mergedRack;
 }
 
-// ---------------- Scrabble : << and >> ----------------
-
-// Prints the whole board. As a friend it reads the private board directly.
+// Prints the whole board,  As a friend it reads the private board directly
 ostream& operator<<(ostream& out, const Scrabble& scrabble)
 {
     out << "Scrabble:" << endl;
@@ -1652,8 +1176,7 @@ ostream& operator<<(ostream& out, const Scrabble& scrabble)
     return out;
 }
 
-// Reads a move as:  letter position row   (e.g.  G 1 1)  and places it.
-// All the normal checks of placeLetter() still run (exceptions).
+// Reads a move
 istream& operator>>(istream& in, Scrabble& scrabble)
 {
     char letter;
@@ -1682,17 +1205,11 @@ istream& operator>>(istream& in, Scrabble& scrabble)
     newClue.clueLetter = letter;
     newClue.cluePosition = position;
     newClue.clueRow = (rowNumber == 1) ? WORD_1 : WORD_2;
-
     scrabble.placeLetter(newClue);
     return in;
 }
 
-
-// =====================================================================
-//  HELPER FUNCTIONS FOR THE .TXT FILES (Module 6)
-// =====================================================================
-
-// Removes spaces, tabs and '\r' from both ends: "  Garden \r" -> "Garden"
+// Removes spaces
 string trimSpaces(string text)
 {
     int start = 0;
@@ -1714,19 +1231,16 @@ string trimSpaces(string text)
     return text.substr(start, end - start + 1);
 }
 
-// Splits "Kitchen|5|E|A" into "Kitchen", "5", "E", "A".
-// A '|' at the very start or end of the line (e.g. "| A | B |") is ignored.
 int splitLine(string line, char separator, DynamicArray<string>& parts)
 {
     line = trimSpaces(line);
-
     if (line.length() > 0 && line[0] == separator)
     {
-        line = line.substr(1);                       // remove first '|'
+        line = line.substr(1);                      
     }
     if (line.length() > 0 && line[line.length() - 1] == separator)
     {
-        line = line.substr(0, line.length() - 1);    // remove last '|'
+        line = line.substr(0, line.length() - 1);    
     }
 
     int partCount = 0;
@@ -1736,7 +1250,6 @@ int splitLine(string line, char separator, DynamicArray<string>& parts)
     {
         if (line[i] == separator)
         {
-            // one part is finished: save it (if there is space) and start a new one
             if (partCount < parts.getSize())
             {
                 parts[partCount] = trimSpaces(currentPart);
@@ -1750,17 +1263,14 @@ int splitLine(string line, char separator, DynamicArray<string>& parts)
         }
     }
 
-    // the last part (after the last separator)
     if (partCount < parts.getSize())
     {
         parts[partCount] = trimSpaces(currentPart);
     }
     partCount++;
-
     return partCount;
 }
 
-// "25" -> 25,  "-5" -> -5,  "abc" -> false
 bool textToNumber(string text, int& number)
 {
     text = trimSpaces(text);
@@ -1778,7 +1288,7 @@ bool textToNumber(string text, int& number)
         index = 1;
         if (text.length() == 1)
         {
-            return false;     // only a sign, no digits
+            return false;     
         }
     }
 
@@ -1806,7 +1316,6 @@ string twoDigits(int number)
     return to_string(number);
 }
 
-// "WIN" with width 8 -> "WIN     "
 string padRight(string text, int width)
 {
     while ((int)text.length() < width)
@@ -1816,11 +1325,6 @@ string padRight(string text, int width)
     return text;
 }
 
-
-// =====================================================================
-//  MODULE 6 : FILE I/O  -  Class: GameFileReader
-// =====================================================================
-
 void GameFileReader::checkProfileNumber(int profileNumber)
 {
     if (profileNumber < 1 || profileNumber > TOTAL_PROFILES)
@@ -1829,11 +1333,7 @@ void GameFileReader::checkProfileNumber(int profileNumber)
     }
 }
 
-// Makes the right object for each role. This small if-else chain is used
-// only ONCE, while loading the file. After that, the game works with
-// virtual functions (polymorphism) and never checks the role again.
-Character* GameFileReader::createCharacter(string role, string name, string nationalityText,
-    char letter, int position)
+Character* GameFileReader::createCharacter(string role, string name, string nationalityText,char letter, int position)
 {
     if (role == "Victim")
     {
@@ -1863,11 +1363,10 @@ Character* GameFileReader::createCharacter(string role, string name, string nati
     {
         return new PA(name, nationalityText, letter, position);
     }
-
     throw FileCorruptedException(CHARACTERS_FILE, "unknown role \"" + role + "\".");
 }
 
-// Counts the data lines of clue.txt (the first line is the heading)
+// Counts the data lines of clue.txt 
 int GameFileReader::countProfiles(string fileName)
 {
     ifstream file(fileName);
@@ -1892,9 +1391,8 @@ int GameFileReader::countProfiles(string fileName)
     return profiles;
 }
 
-// Reads line number "profileNumber" of clue.txt, e.g. 2 -> Guard|GERMANS|SHEPHERD
-void GameFileReader::readClueProfile(int profileNumber, string& culpritRole,
-    string& word1, string& word2, string fileName)
+// Reads line number 
+void GameFileReader::readClueProfile(int profileNumber, string& culpritRole,string& word1, string& word2, string fileName)
 {
     checkProfileNumber(profileNumber);
 
@@ -1923,8 +1421,7 @@ void GameFileReader::readClueProfile(int profileNumber, string& culpritRole,
             if (splitLine(line, '|', parts) != 3)
             {
                 file.close();
-                throw FileCorruptedException(fileName, "line " + to_string(lineNumber) +
-                    " must have 3 columns.");
+                throw FileCorruptedException(fileName, "line " + to_string(lineNumber) +" must have 3 columns.");
             }
 
             culpritRole = parts[0];
@@ -1939,8 +1436,6 @@ void GameFileReader::readClueProfile(int profileNumber, string& culpritRole,
     throw FileCorruptedException(fileName, "profile " + to_string(profileNumber) + " is missing.");
 }
 
-// Reads the 7 locations. Column 0 = name, column 1 = position, and the
-// letter of the selected culprit is in column (profileNumber + 1).
 void GameFileReader::loadLocations(Cottage& cottage, int profileNumber, string fileName)
 {
     checkProfileNumber(profileNumber);
@@ -1951,10 +1446,10 @@ void GameFileReader::loadLocations(Cottage& cottage, int profileNumber, string f
         throw FileNotFoundException(fileName);
     }
 
-    const int COLUMNS = 9;            // Place|W1Pos|Cook|Guard|Servant|P1|P2|PA|Child
+    const int COLUMNS = 9;            
     DynamicArray<string> parts(COLUMNS);
     string line;
-    getline(file, line);              // skip the heading line
+    getline(file, line);             
 
     int locationNumber = 0;
     while (getline(file, line))
@@ -1997,11 +1492,7 @@ void GameFileReader::loadLocations(Cottage& cottage, int profileNumber, string f
     }
 }
 
-// Reads the 8 people. Columns: 0 Name, 1 Role, 2 Nationality, 3 W2Pos,
-// 4-10 the letters of the 7 culprits, 11 isCulprit.
-// The letter of the selected culprit is in column (profileNumber + 3).
-int GameFileReader::loadCharacters(Character* people[], int maxPeople, int profileNumber,
-    string fileName)
+int GameFileReader::loadCharacters(Character* people[], int maxPeople, int profileNumber, string fileName)
 {
     checkProfileNumber(profileNumber);
 
@@ -2052,7 +1543,7 @@ int GameFileReader::loadCharacters(Character* people[], int maxPeople, int profi
     }
     catch (...)
     {
-        // Something went wrong in the middle: delete the people that were
+        // Something went wrong in the middle delete the people that were
         // already created (no memory leak), then pass the error on.
         for (int i = 0; i < peopleCount; i++)
         {
@@ -2067,8 +1558,7 @@ int GameFileReader::loadCharacters(Character* people[], int maxPeople, int profi
     return peopleCount;
 }
 
-// Reads lines like "Max_Turns=25". The text before '=' is the key and
-// the text after '=' is the value.
+// Reads lines 
 GameRules GameFileReader::readRules(string fileName)
 {
     ifstream file(fileName);
@@ -2106,8 +1596,7 @@ GameRules GameFileReader::readRules(string fileName)
         {
             rules.loseCondition = value;
         }
-        else if (key == "Max_Turns" || key == "Starting_Credibility" ||
-            key == "Every_Wrong_Turn" || key == "Every_Wrong_Word")
+        else if (key == "Max_Turns" || key == "Starting_Credibility" || key == "Every_Wrong_Turn" || key == "Every_Wrong_Word")
         {
             if (!textToNumber(value, number))
             {
@@ -2117,7 +1606,7 @@ GameRules GameFileReader::readRules(string fileName)
 
             if (number < 0)
             {
-                number = -number;   // "-5" in the file -> penalty of 5
+                number = -number;  
             }
 
             if (key == "Max_Turns")
@@ -2146,7 +1635,6 @@ GameRules GameFileReader::readRules(string fileName)
     {
         throw FileCorruptedException(fileName, "turns and credibility must be more than 0.");
     }
-
     return rules;
 }
 
@@ -2164,30 +1652,23 @@ void GameFileReader::showTextFile(string fileName)
     {
         cout << line << endl;
     }
-
     file.close();
 }
-
-
-// =====================================================================
-//  MODULE 6 : LEADER / SCORE BOARD  -  Class: ScoreBoard
-// =====================================================================
 
 ScoreBoard::ScoreBoard(string scoreFileName)
 {
     fileName = scoreFileName;
 }
 
-// Today's date as dd-mm-yy, e.g. "25-11-26"
+// Today date as dd-mm-yy
 string ScoreBoard::getTodayDate() const
 {
     time_t now = time(0);                 // seconds since 1970
     tm dateParts;
     localtime_s(&dateParts, &now);        // split into day, month, year
-
     int day = dateParts.tm_mday;
-    int month = dateParts.tm_mon + 1;     // months start from 0 in <ctime>
-    int year = dateParts.tm_year % 100;   // years since 1900 -> last 2 digits
+    int month = dateParts.tm_mon + 1;     
+    int year = dateParts.tm_year % 100; 
 
     return twoDigits(day) + "-" + twoDigits(month) + "-" + twoDigits(year);
 }
@@ -2207,10 +1688,7 @@ bool ScoreBoard::fileHasData() const
     return hasLine;
 }
 
-// Adds one line at the end of the file. ios::app = APPEND mode, so the
-// old results are never erased.
-void ScoreBoard::addScore(string detectiveName, bool won, int credibilityLeft,
-    int turnsLeft, string culpritRole)
+void ScoreBoard::addScore(string detectiveName, bool won, int credibilityLeft, int turnsLeft, string culpritRole)
 {
     bool writeHeading = !fileHasData();
 
@@ -2233,14 +1711,7 @@ void ScoreBoard::addScore(string detectiveName, bool won, int credibilityLeft,
             culpritRole[i] = '_';
         }
     }
-
-    file << detectiveName << "|"
-        << (won ? "WIN" : "LOSE") << "|"
-        << credibilityLeft << "|"
-        << twoDigits(turnsLeft) << "|"
-        << culpritRole << "|"
-        << getTodayDate() << endl;
-
+    file << detectiveName << "|"<< (won ? "WIN" : "LOSE") << "|"<< credibilityLeft << "|"<< twoDigits(turnsLeft) << "|"<< culpritRole << "|"<< getTodayDate() << endl;
     file.close();
 }
 
@@ -2254,8 +1725,7 @@ void ScoreBoard::displayScores() const
     }
 
     cout << "================= LEADER / SCORE BOARD =================" << endl;
-    cout << padRight("Detective", 16) << padRight("Result", 8) << padRight("Cred.", 7)
-        << padRight("Turns", 7) << padRight("Culprit", 11) << "Date" << endl;
+    cout << padRight("Detective", 16) << padRight("Result", 8) << padRight("Cred.", 7) << padRight("Turns", 7) << padRight("Culprit", 11) << "Date" << endl;
     cout << "--------------------------------------------------------" << endl;
 
     const int COLUMNS = 6;
@@ -2277,8 +1747,7 @@ void ScoreBoard::displayScores() const
             throw FileCorruptedException(fileName, "a line must have 6 columns: " + line);
         }
 
-        cout << padRight(parts[0], 16) << padRight(parts[1], 8) << padRight(parts[2], 7)
-            << padRight(parts[3], 7) << padRight(parts[4], 11) << parts[5] << endl;
+        cout << padRight(parts[0], 16) << padRight(parts[1], 8) << padRight(parts[2], 7)<< padRight(parts[3], 7) << padRight(parts[4], 11) << parts[5] << endl;
         games++;
     }
 
@@ -2287,25 +1756,15 @@ void ScoreBoard::displayScores() const
         cout << "No games have been played yet." << endl;
     }
     cout << "========================================================" << endl;
-
     file.close();
 }
 
-
-// =====================================================================
-//  MODULE 12 : SINGLETON GAME ENGINE   (+ MODULE 2 : GAME INITIALIZATION)
-// =====================================================================
-
-// The static pointer must be defined ONCE in a .cpp file.
-// It starts as nullptr: no engine has been made yet.
 GameEngine* GameEngine::instance = nullptr;
 
-// PRIVATE constructor. The member objects are built in the initializer
-// list (composition). The Detective gets a temporary name; the real name
+// PRIVATE constructor ,  The member objects are built in the initializer
+// list  The Detective gets a temporary name; the real name
 // is asked when a new game starts.
-GameEngine::GameEngine()
-    : detective("Detective", 100),
-    finalClueRack(16)                // 7 letters + 1 space + 8 letters
+GameEngine::GameEngine(): detective("Detective", 100),finalClueRack(16)                // 7 letters + 1 space + 8 letters
 {
     for (int i = 0; i < MAX_PEOPLE; i++)
     {
@@ -2325,13 +1784,13 @@ GameEngine::GameEngine()
     srand((unsigned int)time(0));      // new random culprit in every run
 }
 
-// Private destructor: frees the 8 character objects
+// Private destructor, frees the 8 character objects
 GameEngine::~GameEngine()
 {
     freePeople();
 }
 
-// Gives the one and only engine. It is created on the first call only.
+// Gives the one and only engine, It is created on the first call only.
 GameEngine* GameEngine::getInstance()
 {
     if (instance == nullptr)
@@ -2341,23 +1800,20 @@ GameEngine* GameEngine::getInstance()
     return instance;
 }
 
-// Deletes the engine (called once at the end of main)
+// Deletes the engine
 void GameEngine::destroyInstance()
 {
     delete instance;
     instance = nullptr;
 }
 
-// ASSOCIATION: the engine only remembers where the score board is
+// ASSOCIATION, the engine only remembers where the score board is
 void GameEngine::setScoreBoard(ScoreBoard* board)
 {
     scoreBoard = board;
 }
 
-
-// ---------------- Screen and input helpers ----------------
-
-// Clears the console window (Windows command)
+// Clears the console window
 void GameEngine::clearScreen() const
 {
     system("cls");
@@ -2371,7 +1827,6 @@ void GameEngine::pressEnterToContinue() const
 }
 
 // Reads a whole line and turns it into a number between minimum and maximum.
-// Reading the whole line with getline() keeps cin clean after wrong input.
 int GameEngine::readNumber(int minimum, int maximum) const
 {
     string input;
@@ -2391,9 +1846,7 @@ int GameEngine::readNumber(int minimum, int maximum) const
     return number;
 }
 
-// Asks for the detective's name until a valid one is typed.
-// Rules (Module 2): the name must not be empty and must not have spaces.
-// The player can use '_' or '.' instead of a space, e.g. Agent_007.
+// Asks for the detective's name until a valid one is typed
 string GameEngine::readDetectiveName() const
 {
     while (true)
@@ -2409,7 +1862,6 @@ string GameEngine::readDetectiveName() const
             {
                 throw InvalidInputException("the name cannot be empty.");
             }
-
             for (int i = 0; i < (int)name.length(); i++)
             {
                 if (name[i] == ' ')
@@ -2417,7 +1869,6 @@ string GameEngine::readDetectiveName() const
                     throw InvalidInputException("no spaces allowed, write it like Agent_007 or Insp.Jamshad");
                 }
             }
-
             return name;
         }
         catch (GameException& error)
@@ -2428,9 +1879,9 @@ string GameEngine::readDetectiveName() const
 }
 
 
-// ---------------- Main menu ----------------
+// Main menu 
 
-// Shown once when the program starts: game title and a short scenario
+// shown once when the program starts , game title and a short scenario
 void GameEngine::showTitle() const
 {
     clearScreen();
@@ -2447,7 +1898,7 @@ void GameEngine::showTitle() const
     pressEnterToContinue();
 }
 
-// The Main Menu is made from the MenuChoice enum (Module 13)
+// The Main Menu is made from the menuchoice enum 
 void GameEngine::showMainMenu() const
 {
     cout << "======================================================" << endl;
@@ -2458,16 +1909,14 @@ void GameEngine::showMainMenu() const
     {
         cout << "      [" << option << "] " << menuChoiceToText((MenuChoice)option) << endl;
     }
-
     cout << "======================================================" << endl;
     cout << "Choice: ";
 }
 
-// [2] Leader / Score Board (uses the associated ScoreBoard object)
+// Score Board uses the associated ScoreBoard object
 void GameEngine::showLeaderBoard() const
 {
     clearScreen();
-
     if (scoreBoard == nullptr)
     {
         cout << "The score board is not connected." << endl;
@@ -2486,7 +1935,7 @@ void GameEngine::showLeaderBoard() const
     pressEnterToContinue();
 }
 
-// [3] About (read from about.txt)
+// read from about.txt
 void GameEngine::showAbout() const
 {
     clearScreen();
@@ -2501,7 +1950,7 @@ void GameEngine::showAbout() const
     pressEnterToContinue();
 }
 
-// [4] Rules (numbers from rules.txt, plus how to play)
+// numbers from rules.txt, plus how to play
 void GameEngine::showRules()
 {
     clearScreen();
@@ -2531,11 +1980,7 @@ void GameEngine::showRules()
     pressEnterToContinue();
 }
 
-
-// ---------------- Module 2 : game initialization ----------------
-
-// Reads rules.txt. If the file is missing or corrupted, the default
-// values of GameRules are used and the game still works.
+// Reads rules.txt. If the file is missing or corrupted, the default values of GameRules are used and the game still works.
 void GameEngine::loadRules()
 {
     try
@@ -2550,7 +1995,7 @@ void GameEngine::loadRules()
     }
 }
 
-// Picks a random line (profile) of clue.txt and reads its 2 words
+// Picks a random line profile of clue.txt and reads its 2 words
 void GameEngine::chooseRandomCulprit()
 {
     int totalProfiles = GameFileReader::countProfiles();
@@ -2563,14 +2008,11 @@ void GameEngine::chooseRandomCulprit()
     {
         totalProfiles = GameFileReader::TOTAL_PROFILES;
     }
-
     profileNumber = rand() % totalProfiles + 1;      // 1 to 7
     GameFileReader::readClueProfile(profileNumber, culpritRole, targetWord1, targetWord2);
 }
 
-// Sets isCulprit = true on the character whose role matches the culprit.
-// isCulprit is PROTECTED in Character. GameEngine can change it directly
-// only because it is a FRIEND class of Character (Module 11).
+// Sets isCulprit = true on the character whose role matches the culprit
 void GameEngine::markCulprit()
 {
     bool culpritFound = false;
@@ -2594,7 +2036,7 @@ void GameEngine::markCulprit()
     }
 }
 
-// Deletes the character objects made by GameFileReader::loadCharacters()
+// Deletes the character objects made by GameFileReader loadCharacters()
 void GameEngine::freePeople()
 {
     for (int i = 0; i < peopleCount; i++)
@@ -2605,19 +2047,18 @@ void GameEngine::freePeople()
     peopleCount = 0;
 }
 
-// [1] New Game
+// New Game
 void GameEngine::startNewGame()
 {
     clearScreen();
     cout << "======================================================" << endl;
     cout << "            THE LOCKER HEIST - NEW GAME" << endl;
     cout << "======================================================" << endl;
-
     string playerName = readDetectiveName();
     loadRules();
     chooseRandomCulprit();
 
-    // A FRESH detective, cottage and board for every new game
+    // A fresh detective, cottage and board for every new game
     detective = Detective(playerName, rules.startingCredibility);
     cottage = Cottage();
     scrabble = Scrabble();
@@ -2636,32 +2077,24 @@ void GameEngine::startNewGame()
     state = STATE_PLAYING;
 
     cout << "\nA culprit has been secretly chosen. The game begins!" << endl;
-    cout << "Max turns: " << rules.maxTurns
-        << "  |  Starting credibility: " << rules.startingCredibility << endl;
+    cout << "Max turns: " << rules.maxTurns << "  |  Starting credibility: " << rules.startingCredibility << endl;
     cout << "WIN : " << replaceUnderscores(rules.winCondition) << endl;
     cout << "LOSE: " << replaceUnderscores(rules.loseCondition) << endl;
+
     pressEnterToContinue();
-
-    // Module 13: play the game turn by turn
     playGame();
-
     state = STATE_MENU;      // back to the main menu after the game
 }
 
 // Shows the detective's status, the racks and the board (like the sample output)
 void GameEngine::showGameStatus() const
 {
-    cout << "Detective: " << detective.getName()
-        << "  |  Credibility: " << detective.getCredibility()
-        << "  |  Turns used: " << detective.getTurns() << " / " << rules.maxTurns << endl;
+    cout << "Detective: " << detective.getName()<< "  |  Credibility: " << detective.getCredibility()<< "  |  Turns used: " << detective.getTurns() << " / " << rules.maxTurns << endl;
     detective.displayRacks();
     cout << scrabble;
 }
 
-
-// ---------------- The main loop ----------------
-
-// Runs the whole program: title, then the main menu until Exit
+// runs the whole program  title, then the main menu until Exit
 void GameEngine::run()
 {
     showTitle();
@@ -2671,12 +2104,11 @@ void GameEngine::run()
     {
         clearScreen();
         showMainMenu();
-
         try
         {
             int choice = readNumber(MENU_NEW_GAME, MENU_EXIT);
 
-            // The number typed by the user becomes a MenuChoice enum value
+            // The number typed by the user becomes a menuchoice enum value
             switch ((MenuChoice)choice)
             {
             case MENU_NEW_GAME:
@@ -2698,7 +2130,7 @@ void GameEngine::run()
         }
         catch (FileNotFoundException& error)
         {
-            // A game file is missing: the game cannot start, back to the menu
+            // A game file is missing, the game cannot start, back to the menu
             cout << error.getFullMessage() << endl;
             cout << "Please put all the .txt files in the project folder." << endl;
             state = STATE_MENU;
@@ -2706,27 +2138,15 @@ void GameEngine::run()
         }
         catch (GameException& error)
         {
-            // Wrong menu input or corrupted data: show it and ask again
+            // wrong menu input or corrupted data, show it and ask again
             cout << error.getFullMessage() << endl;
             state = STATE_MENU;
             pressEnterToContinue();
         }
     }
-
     clearScreen();
     cout << "Thank you for playing THE LOCKER HEIST. Goodbye, Detective!" << endl;
 }
-
-
-// =====================================================================
-//  MODULE 13 : USER INTERFACE (UI) AND MENUS  -  the Game Menu
-// ---------------------------------------------------------------------
-//  Rules used here (see the README "Design Decisions"):
-//   - Every action uses ONE turn, except "View Scrabble Board".
-//   - Answering N (No) to "Search? / Interview?" uses no turn.
-//   - A wrong step (wrong menu input, interview refused) costs -5 credibility.
-//   - The game ends when credibility is 0 or all turns are used.
-// =====================================================================
 
 // The Game Menu shown on every turn
 void GameEngine::showGameMenu() const
@@ -2741,7 +2161,7 @@ void GameEngine::showGameMenu() const
     cout << "Choice: ";
 }
 
-// Asks a Y/N question until the player types Y or N (small letters too)
+// Asks a Y/N question until the player types Y or N small letters too
 bool GameEngine::askYesNo(string question) const
 {
     while (true)
@@ -2763,12 +2183,11 @@ bool GameEngine::askYesNo(string question) const
     }
 }
 
-// A wrong step costs credibility (value from rules.txt, normally 5)
+// A wrong step costs credibility value from rules.txt, normally 5
 void GameEngine::giveWrongStepPenalty(string reason)
 {
     detective.loseCredibility(rules.wrongTurnPenalty);
-    cout << "Wrong step: " << reason << "  (-" << rules.wrongTurnPenalty
-        << " credibility, now " << detective.getCredibility() << ")" << endl;
+    cout << "Wrong step: " << reason << "  (-" << rules.wrongTurnPenalty << " credibility, now " << detective.getCredibility() << ")" << endl;
 }
 
 // The GameEngine counts the turns; the Detective only stores the number
@@ -2784,7 +2203,6 @@ void GameEngine::checkGameOver()
     {
         return;
     }
-
     if (detective.getCredibility() <= 0)
     {
         cout << "\nYour credibility is ZERO. Nobody trusts you anymore!" << endl;
@@ -2797,7 +2215,7 @@ void GameEngine::checkGameOver()
     }
 }
 
-// The loop of one game: one pass = one menu choice
+// The loop of one game
 void GameEngine::playGame()
 {
     state = STATE_PLAYING;
@@ -2809,7 +2227,7 @@ void GameEngine::playGame()
         showGameStatus();
         showGameMenu();
 
-        // 1. read the choice (wrong input = wrong step)
+        // read the choice 
         int choice;
         try
         {
@@ -2824,7 +2242,7 @@ void GameEngine::playGame()
             continue;
         }
 
-        // 2. do the action
+        // do the action
         bool turnUsed = false;
         try
         {
@@ -2837,7 +2255,7 @@ void GameEngine::playGame()
                 turnUsed = interviewPerson();
                 break;
             case 3:
-                viewBoard();             // free: turnUsed stays false
+                viewBoard();             
                 break;
             case 4:
                 turnUsed = formWord();
@@ -2859,7 +2277,7 @@ void GameEngine::playGame()
             cout << error.getFullMessage() << endl;
         }
 
-        // 3. count the turn and check the end of the game
+        // count the turn and check the end of the game
         if (turnUsed)
         {
             useTurn();
@@ -2867,15 +2285,10 @@ void GameEngine::playGame()
         checkGameOver();
         pressEnterToContinue();
     }
-
-    // Module 14: WIN / LOSE screen and save the result
     finishGame();
 }
 
-// [1] Visit a Location
-// Shows the 7 locations. The first visit gives the letter and places it
-// on the board. A searched location can be searched again to see its
-// letter again. N (No) goes back to the location list.
+//  Visit a Location
 bool GameEngine::visitLocation()
 {
     while (true)
@@ -2895,43 +2308,37 @@ bool GameEngine::visitLocation()
             cout << error.getFullMessage() << endl;
             continue;                         // ask again
         }
-
         if (number == 0)
         {
             return false;                     // back, no turn used
         }
-
         string placeName = replaceUnderscores(cottage.getLocationName(number));
 
         if (!cottage.isSearched(number))
         {
-            // ----- first visit -----
+            // first visit 
             cout << "You have NOT searched the " << placeName << " yet." << endl;
             if (askYesNo("Search?"))
             {
-                Clue foundClue = cottage.searchLocation(number);   // Location -> Clue
-                detective.collectClue(foundClue);                  // Clue -> Rack
-                scrabble.placeLetter(foundClue);                   // Clue -> Board
-
-                cout << "Letter " << foundClue.clueLetter << " collected at position "
-                    << foundClue.cluePosition << " of Word 1." << endl;
+                Clue foundClue = cottage.searchLocation(number);   
+                detective.collectClue(foundClue);               
+                scrabble.placeLetter(foundClue);                   
+                cout << "Letter " << foundClue.clueLetter << " collected at position " << foundClue.cluePosition << " of Word 1." << endl;
                 cout << "Letter has been placed." << endl;
                 return true;
             }
         }
         else
         {
-            // ----- visit again -----
+            //visit again
             cout << "The " << placeName << " has already been searched." << endl;
             if (askYesNo("Do you want to search it again?"))
             {
                 Clue oldClue = cottage.searchLocation(number);
-                cout << "You found letter " << oldClue.clueLetter << " at position "
-                    << oldClue.cluePosition << " of Word 1 here before." << endl;
+                cout << "You found letter " << oldClue.clueLetter << " at position " << oldClue.cluePosition << " of Word 1 here before." << endl;
                 return true;
             }
         }
-
         cout << "Going back to the locations..." << endl;
     }
 }
@@ -2943,15 +2350,12 @@ void GameEngine::showPeopleMenu() const
     for (int i = 0; i < peopleCount; i++)
     {
         string label = people[i]->getName() + " (" + people[i]->getRole() + ")";
-        cout << "[" << (i + 1) << "] " << padRight(label, 26) << "- "
-            << (people[i]->isInterviewed() ? "Interviewed" : "NOT Interviewed") << endl;
+        cout << "[" << (i + 1) << "] " << padRight(label, 26) << "- " << (people[i]->isInterviewed() ? "Interviewed" : "NOT Interviewed") << endl;
     }
     cout << "============================" << endl;
 }
 
-// [2] Interview a Person
-// The credibility condition is checked with the VIRTUAL function
-// canBeInterviewed(), so there is no if-else chain on the role here.
+// 2 ,  Interview a Person
 bool GameEngine::interviewPerson()
 {
     while (true)
@@ -2959,7 +2363,6 @@ bool GameEngine::interviewPerson()
         showPeopleMenu();
         cout << "[0] Back to the Game Menu" << endl;
         cout << "Pick: ";
-
         int number;
         try
         {
@@ -2970,15 +2373,13 @@ bool GameEngine::interviewPerson()
             cout << error.getFullMessage() << endl;
             continue;
         }
-
         if (number == 0)
         {
             return false;
         }
-
         Character* person = people[number - 1];
 
-        // Credibility condition (80 / 75 / 50 / 35 / any time)
+        // Credibility condition
         if (!person->canBeInterviewed(detective.getCredibility()))
         {
             InterviewDeniedException denied(person->getName(), person->getRequiredCredibility());
@@ -2989,69 +2390,48 @@ bool GameEngine::interviewPerson()
 
         if (!person->isInterviewed())
         {
-            // ----- first interview -----
+            // first interview 
             cout << "You have NOT interviewed " << person->getName() << " yet." << endl;
             if (askYesNo("Interview?"))
             {
-                cout << endl << *person;                 // polymorphic << (Module 11)
-
-                Clue personClue = person->getClue();     // Character -> Clue
-                detective.collectClue(personClue);       // Clue -> Rack
-                scrabble.placeLetter(personClue);        // Clue -> Board
+                cout << endl << *person;                 
+                Clue personClue = person->getClue();     
+                detective.collectClue(personClue);      
+                scrabble.placeLetter(personClue);        
                 person->setInterviewed(true);
-
-                cout << "\nLetter " << personClue.clueLetter << " collected at position "
-                    << personClue.cluePosition << " of Word 2." << endl;
+                cout << "\nLetter " << personClue.clueLetter << " collected at position " << personClue.cluePosition << " of Word 2." << endl;
                 cout << "Letter has been placed." << endl;
                 return true;
             }
         }
         else
         {
-            // ----- interview again -----
+            //  interview again 
             cout << person->getName() << " has already been interviewed." << endl;
             if (askYesNo("Do you want to interview again?"))
             {
                 Clue oldClue = person->getClue();
-                cout << person->getName() << " repeats: letter " << oldClue.clueLetter
-                    << " at position " << oldClue.cluePosition << " of Word 2." << endl;
+                cout << person->getName() << " repeats: letter " << oldClue.clueLetter << " at position " << oldClue.cluePosition << " of Word 2." << endl;
                 return true;
             }
         }
-
         cout << "Going back to the characters..." << endl;
     }
 }
 
-// [3] View Scrabble Board (free: it does not use a turn)
+// 3 View Scrabble Board 
 void GameEngine::viewBoard() const
 {
     cout << endl;
     detective.displayRacks();
     cout << scrabble;
-    cout << "Word 1: " << scrabble.getFilledCount(WORD_1) << "/" << Scrabble::WORD1_LENGTH
-        << " letters   |   Word 2: " << scrabble.getFilledCount(WORD_2) << "/"
-        << Scrabble::WORD2_LENGTH << " letters" << endl;
+    cout << "Word 1: " << scrabble.getFilledCount(WORD_1) << "/" << Scrabble::WORD1_LENGTH<< " letters   |   Word 2: " << scrabble.getFilledCount(WORD_2) << "/"<< Scrabble::WORD2_LENGTH << " letters" << endl;
 
     if (word1Solved && word2Solved)
     {
         showFinalClue();
     }
 }
-
-
-// =====================================================================
-//  MODULE 14 : COMPLETION CONDITIONS
-// ---------------------------------------------------------------------
-//  - Form a Word : when a row is full, the detective types its word.
-//                  Correct -> word solved.  Wrong -> -10 credibility.
-//  - When both words are solved, the culprit's role (from clue.txt) is
-//    shown together with the final clue (Rack 1 + Rack 2).
-//  - Accuse      : correct culprit -> WIN.  Wrong person -> -5 credibility.
-//  - LOSE        : credibility 0, all turns used, or the player quits.
-//  - At the end  : WIN/LOSE screen, then the result is saved in
-//                  scoreBoard.txt, then back to the Main Menu.
-// =====================================================================
 
 // Finds the person whose isCulprit flag is true
 Character* GameEngine::findCulprit() const
@@ -3066,7 +2446,7 @@ Character* GameEngine::findCulprit() const
     return nullptr;
 }
 
-// [4] Form a Word
+// 4 Form a Word
 bool GameEngine::formWord()
 {
     int pick;
@@ -3103,7 +2483,7 @@ bool GameEngine::formWord()
         return false;
     }
 
-    // The row must be full before a word can be typed (exception otherwise)
+    // The row must be full before a word can be typed exception otherwise
     if (!scrabble.isRowComplete(row))
     {
         throw WordIncompleteException(row);
@@ -3122,7 +2502,7 @@ bool GameEngine::formWord()
 
     if (scrabble.isWordCorrect(row, typedWord))
     {
-        // ----- correct word -----
+        // correct word
         if (row == WORD_1)
         {
             word1Solved = true;
@@ -3134,7 +2514,7 @@ bool GameEngine::formWord()
         detective.addSolvedWord(scrabble.getTargetWord(row));
         cout << "Correct! " << wordRowToText(row) << " is " << scrabble.getTargetWord(row) << "." << endl;
 
-        // Both words solved: make the final clue with operator+ (Module 11)
+        // Both words solved
         if (word1Solved && word2Solved)
         {
             finalClueRack = detective.getRack(WORD_1) + detective.getRack(WORD_2);
@@ -3143,18 +2523,17 @@ bool GameEngine::formWord()
     }
     else
     {
-        // ----- wrong word: -10 credibility (value from rules.txt) -----
+        //  wrong word -10 credibility 
         detective.loseCredibility(rules.wrongWordPenalty);
         InvalidWordException wrongWord(typedWord);
         cout << wrongWord.getFullMessage() << "  (-" << rules.wrongWordPenalty
             << " credibility, now " << detective.getCredibility() << ")" << endl;
         cout << "You can try again in your next turn." << endl;
     }
-
-    return true;      // typing a word (right or wrong) uses a turn
+    return true;      // typing a word right or wrong uses a turn
 }
 
-// Shows the meaning of the two solved words. The culprit's role is the
+// Shows the meaning of the two solved words.The culprit's role is the
 // one read from clue.txt, and the nationality comes from the culprit object.
 void GameEngine::showFinalClue() const
 {
@@ -3163,19 +2542,16 @@ void GameEngine::showFinalClue() const
 
     cout << "\n****************************************************" << endl;
     cout << "Both words solved:" << endl;
-    cout << "  " << targetWord1 << " + " << targetWord2 << " = " << nationalityText
-        << "  ->  " << culpritRole << " is the Culprit!" << endl;
+    cout << "  " << targetWord1 << " + " << targetWord2 << " = " << nationalityText << "  ->  " << culpritRole << " is the Culprit!" << endl;
     cout << "  Final clue (Rack 1 + Rack 2): " << finalClueRack.getLettersInOrder() << endl;
     cout << "Now use [5] Accuse a Suspect to catch the culprit." << endl;
     cout << "****************************************************" << endl;
 }
 
-// [5] Accuse a Suspect
-// Only people who can be accused are listed. canBeAccused() is VIRTUAL:
-// Suspect says YES, the Victim says NO, so no role check is needed here.
+// 5 Accuse a Suspect
 bool GameEngine::accuseSuspect()
 {
-    DynamicArray<int> suspectIndex(MAX_PEOPLE);    // list number -> index in people[]
+    DynamicArray<int> suspectIndex(MAX_PEOPLE);    // list number 
     int suspectCount = 0;
 
     int pick;
@@ -3236,7 +2612,7 @@ bool GameEngine::accuseSuspect()
     return true;      // an accusation uses a turn
 }
 
-// WIN / LOSE screen, then save the result in the Leader/Score Board
+// WIN / LOSE screen
 void GameEngine::finishGame()
 {
     clearScreen();
@@ -3247,7 +2623,6 @@ void GameEngine::finishGame()
     {
         turnsLeft = 0;
     }
-
     Character* culprit = findCulprit();
     string culpritText = culpritRole;
     if (culprit != nullptr)
@@ -3268,19 +2643,17 @@ void GameEngine::finishGame()
     }
     cout << "==============================================================" << endl;
     cout << " Final credibility : " << detective.getCredibility() << endl;
-    cout << " Turns used        : " << detective.getTurns() << " / " << rules.maxTurns
-        << "   (turns left: " << turnsLeft << ")" << endl;
+    cout << " Turns used        : " << detective.getTurns() << " / " << rules.maxTurns << "   (turns left: " << turnsLeft << ")" << endl;
     cout << " Culprit           : " << culpritText << endl;
     cout << " Words             : " << targetWord1 << " + " << targetWord2 << endl;
     cout << "==============================================================" << endl;
 
-    // Save the result (ASSOCIATION: the engine uses the score board)
+    // Save the result 
     if (scoreBoard != nullptr)
     {
         try
         {
-            scoreBoard->addScore(detective.getName(), won, detective.getCredibility(),
-                turnsLeft, culpritRole);
+            scoreBoard->addScore(detective.getName(), won, detective.getCredibility(), turnsLeft, culpritRole);
             cout << "Your result has been saved in the Leader/Score Board." << endl;
         }
         catch (GameException& error)
@@ -3288,7 +2661,6 @@ void GameEngine::finishGame()
             cout << error.getFullMessage() << endl;
         }
     }
-
     state = STATE_MENU;
-    pressEnterToContinue();      // after this, run() clears the screen and shows the Main Menu
+    pressEnterToContinue();      // after this run() clears the screen and shows the Main Menu
 }
