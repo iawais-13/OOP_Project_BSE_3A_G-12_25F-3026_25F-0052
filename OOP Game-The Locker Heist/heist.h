@@ -13,6 +13,9 @@
 
 #include <iostream>
 #include <string>
+#include <fstream>     // ifstream / ofstream for the .txt files (Module 6)
+#include <cstdlib>     // rand() and srand() to pick a random culprit
+#include <ctime>       // time() for the random seed and today's date
 
 using namespace std;
 
@@ -913,6 +916,121 @@ public:
 
 
 // =====================================================================
+//  MODULE 6 : FILE I/O AND LEADER / SCORE BOARD
+// ---------------------------------------------------------------------
+//  FILE HANDLING lets the game keep its data in .txt files:
+//    - ifstream  reads a file   (input file stream)
+//    - ofstream  writes a file  (output file stream)
+//  So the characters, locations, clues and rules can be changed without
+//  changing the code, and the scores stay saved after the game closes.
+//
+//  The files must be in the same folder as the project files
+//  (the folder that has the .vcxproj file).
+// =====================================================================
+
+// Names of the data files (const = they never change)
+const string CLUE_FILE = "clue.txt";
+const string LOCATIONS_FILE = "locations.txt";
+const string CHARACTERS_FILE = "characters.txt";
+const string RULES_FILE = "rules.txt";
+const string SCORE_FILE = "scoreBoard.txt";     // "leader/scoreBoard.txt" in the manual
+const string ABOUT_FILE = "about.txt";
+
+// ---------------------------------------------------------------------
+//  Struct: GameRules
+//  Keeps the numbers read from rules.txt. The default values are used
+//  when rules.txt is missing or corrupted.
+//  NOTE: penalties are stored as POSITIVE numbers (5 and 10), because
+//  Detective::loseCredibility() subtracts them.
+// ---------------------------------------------------------------------
+struct GameRules
+{
+    int maxTurns = 25;
+    int startingCredibility = 100;
+    int wrongTurnPenalty = 5;
+    int wrongWordPenalty = 10;
+    string winCondition = "Accuse_Correct_Culprit";
+    string loseCondition = "Credibility_Zero_Or_Turns_Exhausted";
+};
+
+// ---------------------------------------------------------------------
+//  Class: GameFileReader
+//  Reads the game data from the .txt files.
+//  All functions are STATIC: they belong to the class itself, so we can
+//  call them without making an object, e.g.
+//      GameFileReader::readRules();
+//  Every function throws FileNotFoundException if the file is missing
+//  and FileCorruptedException if the data is in a wrong format.
+//
+//  "profileNumber" is the line number of the culprit in clue.txt
+//  (1 = Cook, 2 = Guard, 3 = Servant, 4 = Partner 1, 5 = Partner 2,
+//   6 = PA, 7 = Child). The same number tells which COLUMN of
+//  locations.txt and characters.txt has the letters of that culprit.
+// ---------------------------------------------------------------------
+class GameFileReader
+{
+private:
+    // Throws if the profile number is not between 1 and 7
+    static void checkProfileNumber(int profileNumber);
+
+    // Makes the correct character object from its role (used once, while loading)
+    static Character* createCharacter(string role, string name, string nationalityText,
+        char letter, int position);
+
+public:
+    static const int TOTAL_PROFILES = 7;
+
+    // clue.txt : how many culprit profiles there are (should be 7)
+    static int countProfiles(string fileName = CLUE_FILE);
+
+    // clue.txt : reads the culprit role and the 2 words of one profile
+    static void readClueProfile(int profileNumber, string& culpritRole,
+        string& word1, string& word2,
+        string fileName = CLUE_FILE);
+
+    // locations.txt : fills the 7 locations of the cottage
+    static void loadLocations(Cottage& cottage, int profileNumber,
+        string fileName = LOCATIONS_FILE);
+
+    // characters.txt : creates the 8 people (on the heap) and returns how many.
+    // The caller must delete them later.
+    static int loadCharacters(Character* people[], int maxPeople, int profileNumber,
+        string fileName = CHARACTERS_FILE);
+
+    // rules.txt : reads the game rules
+    static GameRules readRules(string fileName = RULES_FILE);
+
+    // Prints a whole text file on the screen (about.txt, rules.txt)
+    static void showTextFile(string fileName);
+};
+
+// ---------------------------------------------------------------------
+//  Class: ScoreBoard  (Leader / Score Board)
+//  Saves the result of every game in scoreBoard.txt and shows all the
+//  previous results. Format of one line:
+//      Detective|Result|Credibility|Turns_Left|Culprit|Date
+// ---------------------------------------------------------------------
+class ScoreBoard
+{
+private:
+    string fileName;
+
+    string getTodayDate() const;     // e.g. "25-11-26"
+    bool fileHasData() const;        // false if the file is missing or empty
+
+public:
+    ScoreBoard(string scoreFileName = SCORE_FILE);
+
+    // Appends one result at the END of the file (old results are kept)
+    void addScore(string detectiveName, bool won, int credibilityLeft,
+        int turnsLeft, string culpritRole);
+
+    // Shows all saved results as a table
+    void displayScores() const;
+};
+
+
+// =====================================================================
 //  HELPER FUNCTIONS
 //  An enum is stored as a number, so these functions convert an enum
 //  value into readable text that we can show on the screen.
@@ -926,5 +1044,24 @@ string replaceUnderscores(string text);
 
 // String manipulation: changes "germans" into "GERMANS"
 string toUpperCase(string text);
+
+// ----- Helpers for reading the .txt files (Module 6) -----
+
+// Removes spaces, tabs and '\r' from the start and the end of a text
+string trimSpaces(string text);
+
+// Cuts a line into parts at every separator, e.g. "A|B|C" -> A, B, C.
+// The parts are stored in the given array; returns how many parts were found.
+int splitLine(string line, char separator, DynamicArray<string>& parts);
+
+// Changes text like "25" or "-5" into a number. Returns false if the text
+// is not a whole number (so we can report a corrupted file).
+bool textToNumber(string text, int& number);
+
+// Makes a number 2 digits long: 5 -> "05", 12 -> "12"
+string twoDigits(int number);
+
+// Adds spaces at the end of a text until it has the given width (for tables)
+string padRight(string text, int width);
 
 #endif // HEIST_H

@@ -145,6 +145,14 @@
   <ItemGroup>
     <ClInclude Include="heist.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="about.txt" />
+    <Text Include="characters.txt" />
+    <Text Include="clue.txt" />
+    <Text Include="locations.txt" />
+    <Text Include="rules.txt" />
+    <Text Include="scoreBoard.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

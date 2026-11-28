@@ -1663,3 +1663,607 @@ istream& operator>>(istream& in, Scrabble& scrabble)
     scrabble.placeLetter(newClue);
     return in;
 }
+
+
+// =====================================================================
+//  HELPER FUNCTIONS FOR THE .TXT FILES (Module 6)
+// =====================================================================
+
+// Removes spaces, tabs and '\r' from both ends: "  Garden \r" -> "Garden"
+string trimSpaces(string text)
+{
+    int start = 0;
+    int end = (int)text.length() - 1;
+
+    while (start <= end && (text[start] == ' ' || text[start] == '\t' || text[start] == '\r'))
+    {
+        start++;
+    }
+    while (end >= start && (text[end] == ' ' || text[end] == '\t' || text[end] == '\r'))
+    {
+        end--;
+    }
+
+    if (start > end)
+    {
+        return "";
+    }
+    return text.substr(start, end - start + 1);
+}
+
+// Splits "Kitchen|5|E|A" into "Kitchen", "5", "E", "A".
+// A '|' at the very start or end of the line (e.g. "| A | B |") is ignored.
+int splitLine(string line, char separator, DynamicArray<string>& parts)
+{
+    line = trimSpaces(line);
+
+    if (line.length() > 0 && line[0] == separator)
+    {
+        line = line.substr(1);                       // remove first '|'
+    }
+    if (line.length() > 0 && line[line.length() - 1] == separator)
+    {
+        line = line.substr(0, line.length() - 1);    // remove last '|'
+    }
+
+    int partCount = 0;
+    string currentPart = "";
+
+    for (int i = 0; i < (int)line.length(); i++)
+    {
+        if (line[i] == separator)
+        {
+            // one part is finished: save it (if there is space) and start a new one
+            if (partCount < parts.getSize())
+            {
+                parts[partCount] = trimSpaces(currentPart);
+            }
+            partCount++;
+            currentPart = "";
+        }
+        else
+        {
+            currentPart = currentPart + line[i];
+        }
+    }
+
+    // the last part (after the last separator)
+    if (partCount < parts.getSize())
+    {
+        parts[partCount] = trimSpaces(currentPart);
+    }
+    partCount++;
+
+    return partCount;
+}
+
+// "25" -> 25,  "-5" -> -5,  "abc" -> false
+bool textToNumber(string text, int& number)
+{
+    text = trimSpaces(text);
+    if (text == "")
+    {
+        return false;
+    }
+
+    int index = 0;
+    bool negative = false;
+
+    if (text[0] == '-' || text[0] == '+')
+    {
+        negative = (text[0] == '-');
+        index = 1;
+        if (text.length() == 1)
+        {
+            return false;     // only a sign, no digits
+        }
+    }
+
+    int result = 0;
+    for (; index < (int)text.length(); index++)
+    {
+        if (text[index] < '0' || text[index] > '9')
+        {
+            return false;     // not a digit
+        }
+        result = result * 10 + (text[index] - '0');
+    }
+
+    number = negative ? -result : result;
+    return true;
+}
+
+// 5 -> "05"
+string twoDigits(int number)
+{
+    if (number >= 0 && number < 10)
+    {
+        return "0" + to_string(number);
+    }
+    return to_string(number);
+}
+
+// "WIN" with width 8 -> "WIN     "
+string padRight(string text, int width)
+{
+    while ((int)text.length() < width)
+    {
+        text = text + " ";
+    }
+    return text;
+}
+
+
+// =====================================================================
+//  MODULE 6 : FILE I/O  -  Class: GameFileReader
+// =====================================================================
+
+void GameFileReader::checkProfileNumber(int profileNumber)
+{
+    if (profileNumber < 1 || profileNumber > TOTAL_PROFILES)
+    {
+        throw InvalidPositionException(profileNumber, TOTAL_PROFILES);
+    }
+}
+
+// Makes the right object for each role. This small if-else chain is used
+// only ONCE, while loading the file. After that, the game works with
+// virtual functions (polymorphism) and never checks the role again.
+Character* GameFileReader::createCharacter(string role, string name, string nationalityText,
+    char letter, int position)
+{
+    if (role == "Victim")
+    {
+        return new Victim(name, nationalityText, letter, position);
+    }
+    if (role == "Cook")
+    {
+        return new Cook(name, nationalityText, letter, position);
+    }
+    if (role == "Guard")
+    {
+        return new Guard(name, nationalityText, letter, position);
+    }
+    if (role == "Servant")
+    {
+        return new Servant(name, nationalityText, letter, position);
+    }
+    if (role == "Child")
+    {
+        return new OwnerChild(name, nationalityText, letter, position);
+    }
+    if (role == "Partner 1" || role == "Partner 2")
+    {
+        return new Partner(name, role, nationalityText, letter, position);
+    }
+    if (role == "PA")
+    {
+        return new PA(name, nationalityText, letter, position);
+    }
+
+    throw FileCorruptedException(CHARACTERS_FILE, "unknown role \"" + role + "\".");
+}
+
+// Counts the data lines of clue.txt (the first line is the heading)
+int GameFileReader::countProfiles(string fileName)
+{
+    ifstream file(fileName);
+    if (!file.is_open())
+    {
+        throw FileNotFoundException(fileName);
+    }
+
+    string line;
+    getline(file, line);              // skip the heading line
+
+    int profiles = 0;
+    while (getline(file, line))
+    {
+        if (trimSpaces(line) != "")   // empty lines are not counted
+        {
+            profiles++;
+        }
+    }
+
+    file.close();
+    return profiles;
+}
+
+// Reads line number "profileNumber" of clue.txt, e.g. 2 -> Guard|GERMANS|SHEPHERD
+void GameFileReader::readClueProfile(int profileNumber, string& culpritRole,
+    string& word1, string& word2, string fileName)
+{
+    checkProfileNumber(profileNumber);
+
+    ifstream file(fileName);
+    if (!file.is_open())
+    {
+        throw FileNotFoundException(fileName);
+    }
+
+    string line;
+    getline(file, line);              // skip the heading line
+
+    DynamicArray<string> parts(3);
+    int lineNumber = 0;
+
+    while (getline(file, line))
+    {
+        if (trimSpaces(line) == "")
+        {
+            continue;
+        }
+        lineNumber++;
+
+        if (lineNumber == profileNumber)
+        {
+            if (splitLine(line, '|', parts) != 3)
+            {
+                file.close();
+                throw FileCorruptedException(fileName, "line " + to_string(lineNumber) +
+                    " must have 3 columns.");
+            }
+
+            culpritRole = parts[0];
+            word1 = toUpperCase(parts[1]);
+            word2 = toUpperCase(parts[2]);
+            file.close();
+            return;
+        }
+    }
+
+    file.close();
+    throw FileCorruptedException(fileName, "profile " + to_string(profileNumber) + " is missing.");
+}
+
+// Reads the 7 locations. Column 0 = name, column 1 = position, and the
+// letter of the selected culprit is in column (profileNumber + 1).
+void GameFileReader::loadLocations(Cottage& cottage, int profileNumber, string fileName)
+{
+    checkProfileNumber(profileNumber);
+
+    ifstream file(fileName);
+    if (!file.is_open())
+    {
+        throw FileNotFoundException(fileName);
+    }
+
+    const int COLUMNS = 9;            // Place|W1Pos|Cook|Guard|Servant|P1|P2|PA|Child
+    DynamicArray<string> parts(COLUMNS);
+    string line;
+    getline(file, line);              // skip the heading line
+
+    int locationNumber = 0;
+    while (getline(file, line))
+    {
+        if (trimSpaces(line) == "")
+        {
+            continue;
+        }
+
+        if (locationNumber == Cottage::TOTAL_LOCATIONS)
+        {
+            file.close();
+            throw FileCorruptedException(fileName, "it has more than 7 locations.");
+        }
+
+        if (splitLine(line, '|', parts) != COLUMNS)
+        {
+            file.close();
+            throw FileCorruptedException(fileName, "a line must have 9 columns: " + line);
+        }
+
+        int position;
+        string letterText = parts[profileNumber + 1];
+
+        if (!textToNumber(parts[1], position) || letterText.length() != 1)
+        {
+            file.close();
+            throw FileCorruptedException(fileName, "wrong position or letter in: " + line);
+        }
+
+        locationNumber++;
+        cottage.setLocation(locationNumber, parts[0], toUpperCase(letterText)[0], position);
+    }
+
+    file.close();
+
+    if (locationNumber != Cottage::TOTAL_LOCATIONS)
+    {
+        throw FileCorruptedException(fileName, "it must have exactly 7 locations.");
+    }
+}
+
+// Reads the 8 people. Columns: 0 Name, 1 Role, 2 Nationality, 3 W2Pos,
+// 4-10 the letters of the 7 culprits, 11 isCulprit.
+// The letter of the selected culprit is in column (profileNumber + 3).
+int GameFileReader::loadCharacters(Character* people[], int maxPeople, int profileNumber,
+    string fileName)
+{
+    checkProfileNumber(profileNumber);
+
+    ifstream file(fileName);
+    if (!file.is_open())
+    {
+        throw FileNotFoundException(fileName);
+    }
+
+    const int COLUMNS = 12;
+    DynamicArray<string> parts(COLUMNS);
+    string line;
+    getline(file, line);              // skip the heading line
+
+    int peopleCount = 0;
+
+    try
+    {
+        while (getline(file, line))
+        {
+            if (trimSpaces(line) == "")
+            {
+                continue;
+            }
+
+            if (peopleCount == maxPeople)
+            {
+                throw FileCorruptedException(fileName, "it has too many people.");
+            }
+
+            if (splitLine(line, '|', parts) != COLUMNS)
+            {
+                throw FileCorruptedException(fileName, "a line must have 12 columns: " + line);
+            }
+
+            int position;
+            string letterText = parts[profileNumber + 3];
+
+            if (!textToNumber(parts[3], position) || letterText.length() != 1)
+            {
+                throw FileCorruptedException(fileName, "wrong position or letter in: " + line);
+            }
+
+            people[peopleCount] = createCharacter(parts[1], parts[0], parts[2],
+                toUpperCase(letterText)[0], position);
+            peopleCount++;
+        }
+    }
+    catch (...)
+    {
+        // Something went wrong in the middle: delete the people that were
+        // already created (no memory leak), then pass the error on.
+        for (int i = 0; i < peopleCount; i++)
+        {
+            delete people[i];
+            people[i] = nullptr;
+        }
+        file.close();
+        throw;      // re-throw the same exception to the caller
+    }
+
+    file.close();
+    return peopleCount;
+}
+
+// Reads lines like "Max_Turns=25". The text before '=' is the key and
+// the text after '=' is the value.
+GameRules GameFileReader::readRules(string fileName)
+{
+    ifstream file(fileName);
+    if (!file.is_open())
+    {
+        throw FileNotFoundException(fileName);
+    }
+
+    GameRules rules;              // starts with the default values
+    DynamicArray<string> parts(2);
+    string line;
+
+    while (getline(file, line))
+    {
+        if (trimSpaces(line) == "")
+        {
+            continue;
+        }
+
+        if (splitLine(line, '=', parts) != 2)
+        {
+            file.close();
+            throw FileCorruptedException(fileName, "a rule must look like Key=Value: " + line);
+        }
+
+        string key = parts[0];
+        string value = parts[1];
+        int number = 0;
+
+        if (key == "Win_Condition")
+        {
+            rules.winCondition = value;
+        }
+        else if (key == "Lose_Condition")
+        {
+            rules.loseCondition = value;
+        }
+        else if (key == "Max_Turns" || key == "Starting_Credibility" ||
+            key == "Every_Wrong_Turn" || key == "Every_Wrong_Word")
+        {
+            if (!textToNumber(value, number))
+            {
+                file.close();
+                throw FileCorruptedException(fileName, "\"" + value + "\" is not a number.");
+            }
+
+            if (number < 0)
+            {
+                number = -number;   // "-5" in the file -> penalty of 5
+            }
+
+            if (key == "Max_Turns")
+            {
+                rules.maxTurns = number;
+            }
+            else if (key == "Starting_Credibility")
+            {
+                rules.startingCredibility = number;
+            }
+            else if (key == "Every_Wrong_Turn")
+            {
+                rules.wrongTurnPenalty = number;
+            }
+            else
+            {
+                rules.wrongWordPenalty = number;
+            }
+        }
+        // any other key is simply ignored
+    }
+
+    file.close();
+
+    if (rules.maxTurns <= 0 || rules.startingCredibility <= 0)
+    {
+        throw FileCorruptedException(fileName, "turns and credibility must be more than 0.");
+    }
+
+    return rules;
+}
+
+// Prints every line of a text file
+void GameFileReader::showTextFile(string fileName)
+{
+    ifstream file(fileName);
+    if (!file.is_open())
+    {
+        throw FileNotFoundException(fileName);
+    }
+
+    string line;
+    while (getline(file, line))
+    {
+        cout << line << endl;
+    }
+
+    file.close();
+}
+
+
+// =====================================================================
+//  MODULE 6 : LEADER / SCORE BOARD  -  Class: ScoreBoard
+// =====================================================================
+
+ScoreBoard::ScoreBoard(string scoreFileName)
+{
+    fileName = scoreFileName;
+}
+
+// Today's date as dd-mm-yy, e.g. "25-11-26"
+string ScoreBoard::getTodayDate() const
+{
+    time_t now = time(0);                 // seconds since 1970
+    tm dateParts;
+    localtime_s(&dateParts, &now);        // split into day, month, year
+
+    int day = dateParts.tm_mday;
+    int month = dateParts.tm_mon + 1;     // months start from 0 in <ctime>
+    int year = dateParts.tm_year % 100;   // years since 1900 -> last 2 digits
+
+    return twoDigits(day) + "-" + twoDigits(month) + "-" + twoDigits(year);
+}
+
+// true if the file exists and has at least one line
+bool ScoreBoard::fileHasData() const
+{
+    ifstream file(fileName);
+    if (!file.is_open())
+    {
+        return false;
+    }
+
+    string firstLine;
+    bool hasLine = (bool)getline(file, firstLine);
+    file.close();
+    return hasLine;
+}
+
+// Adds one line at the end of the file. ios::app = APPEND mode, so the
+// old results are never erased.
+void ScoreBoard::addScore(string detectiveName, bool won, int credibilityLeft,
+    int turnsLeft, string culpritRole)
+{
+    bool writeHeading = !fileHasData();
+
+    ofstream file(fileName, ios::app);
+    if (!file.is_open())
+    {
+        throw FileNotFoundException(fileName);
+    }
+
+    if (writeHeading)
+    {
+        file << "Detective|Result|Credibility|Turns_Left|Culprit|Date" << endl;
+    }
+
+    // "Partner 2" is saved as "Partner_2" (like the sample file)
+    for (int i = 0; i < (int)culpritRole.length(); i++)
+    {
+        if (culpritRole[i] == ' ')
+        {
+            culpritRole[i] = '_';
+        }
+    }
+
+    file << detectiveName << "|"
+        << (won ? "WIN" : "LOSE") << "|"
+        << credibilityLeft << "|"
+        << twoDigits(turnsLeft) << "|"
+        << culpritRole << "|"
+        << getTodayDate() << endl;
+
+    file.close();
+}
+
+// Shows all the results as a table
+void ScoreBoard::displayScores() const
+{
+    ifstream file(fileName);
+    if (!file.is_open())
+    {
+        throw FileNotFoundException(fileName);
+    }
+
+    cout << "================= LEADER / SCORE BOARD =================" << endl;
+    cout << padRight("Detective", 16) << padRight("Result", 8) << padRight("Cred.", 7)
+        << padRight("Turns", 7) << padRight("Culprit", 11) << "Date" << endl;
+    cout << "--------------------------------------------------------" << endl;
+
+    const int COLUMNS = 6;
+    DynamicArray<string> parts(COLUMNS);
+    string line;
+    getline(file, line);              // skip the heading line
+
+    int games = 0;
+    while (getline(file, line))
+    {
+        if (trimSpaces(line) == "")
+        {
+            continue;
+        }
+
+        if (splitLine(line, '|', parts) != COLUMNS)
+        {
+            file.close();
+            throw FileCorruptedException(fileName, "a line must have 6 columns: " + line);
+        }
+
+        cout << padRight(parts[0], 16) << padRight(parts[1], 8) << padRight(parts[2], 7)
+            << padRight(parts[3], 7) << padRight(parts[4], 11) << parts[5] << endl;
+        games++;
+    }
+
+    if (games == 0)
+    {
+        cout << "No games have been played yet." << endl;
+    }
+    cout << "========================================================" << endl;
+
+    file.close();
+}

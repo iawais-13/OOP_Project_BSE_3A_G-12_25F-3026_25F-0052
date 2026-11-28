@@ -27,4 +27,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="about.txt" />
+    <Text Include="characters.txt" />
+    <Text Include="clue.txt" />
+    <Text Include="locations.txt" />
+    <Text Include="scoreBoard.txt" />
+    <Text Include="rules.txt" />
+  </ItemGroup>
 </Project>
