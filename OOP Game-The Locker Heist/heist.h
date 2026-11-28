@@ -479,6 +479,7 @@ protected:
     string characterRole;   // e.g. "Cook"
     string nationality;     // e.g. "Italian"
     bool isCulprit;         // true only for the selected culprit
+    bool interviewed;       // true after the detective interviews this person (Module 13)
 
     // Prints name, role and nationality.
     // Child classes call it inside their own display() (code reuse).
@@ -496,10 +497,12 @@ public:
     string getRole() const;
     string getNationality() const;
     bool getIsCulprit() const;
+    bool isInterviewed() const;
 
     // ----- Setters -----
     void setName(string name);
     void setNationality(string nationalityText);
+    void setInterviewed(bool value);
 
     // Minimum credibility the detective needs to interview this person.
     // VIRTUAL: every child class returns its own value (polymorphism),
@@ -1105,6 +1108,18 @@ private:
     void freePeople();               // deletes the 8 character objects
     void startNewGame();
     void showGameStatus() const;     // credibility, turns, racks, board
+
+    // ----- Module 13 : game menu -----
+    void playGame();                 // the turn loop of one game
+    void showGameMenu() const;
+    bool askYesNo(string question) const;
+    void giveWrongStepPenalty(string reason);   // -5 credibility
+    void useTurn();                             // turns + 1
+    void checkGameOver();                       // credibility 0 or no turns left
+    bool visitLocation();            // returns true if a turn was used
+    bool interviewPerson();          // returns true if a turn was used
+    void showPeopleMenu() const;
+    void viewBoard() const;          // free: no turn
 
 public:
     // Copying is not allowed ( = delete ): there must be only ONE engine

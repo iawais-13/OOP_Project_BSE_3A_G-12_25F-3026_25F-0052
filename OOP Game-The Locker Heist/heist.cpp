@@ -257,6 +257,7 @@ Character::Character(string name, string role, string nationalityText)
     characterRole = role;
     nationality = nationalityText;
     isCulprit = false;
+    interviewed = false;    // nobody has been interviewed at the start
 }
 
 // Virtual destructor (no heap memory in Character itself)
@@ -300,6 +301,16 @@ void Character::setName(string name)
 void Character::setNationality(string nationalityText)
 {
     nationality = nationalityText;
+}
+
+bool Character::isInterviewed() const
+{
+    return interviewed;
+}
+
+void Character::setInterviewed(bool value)
+{
+    interviewed = value;
 }
 
 // Base version: no condition (0). Child classes override this.
@@ -2613,28 +2624,12 @@ void GameEngine::startNewGame()
         << "  |  Starting credibility: " << rules.startingCredibility << endl;
     cout << "WIN : " << replaceUnderscores(rules.winCondition) << endl;
     cout << "LOSE: " << replaceUnderscores(rules.loseCondition) << endl;
-    cout << endl;
-    showGameStatus();
-
-    // ------------------------------------------------------------------
-    // TEMPORARY (until Module 13): the Game Menu is not written yet, so we
-    // only show who the culprit is, to check that initialization works.
-    // These lines will be removed in the next step.
-    // ------------------------------------------------------------------
-    cout << "\n[TEST ONLY] Culprit profile " << profileNumber << ": " << culpritRole
-        << "  (" << targetWord1 << " + " << targetWord2 << ")" << endl;
-    for (int i = 0; i < peopleCount; i++)
-    {
-        if (people[i]->getIsCulprit())
-        {
-            cout << "[TEST ONLY] isCulprit = true for " << people[i]->getName()
-                << " (" << people[i]->getNationality() << ")" << endl;
-        }
-    }
-    cout << "[TEST ONLY] The Game Menu will be added in Module 13." << endl;
-
-    state = STATE_MENU;
     pressEnterToContinue();
+
+    // Module 13: play the game turn by turn
+    playGame();
+
+    state = STATE_MENU;      // back to the main menu after the game
 }
 
 // Shows the detective's status, the racks and the board (like the sample output)
@@ -2704,4 +2699,326 @@ void GameEngine::run()
 
     clearScreen();
     cout << "Thank you for playing THE LOCKER HEIST. Goodbye, Detective!" << endl;
+}
+
+
+// =====================================================================
+//  MODULE 13 : USER INTERFACE (UI) AND MENUS  -  the Game Menu
+// ---------------------------------------------------------------------
+//  Rules used here (see the README "Design Decisions"):
+//   - Every action uses ONE turn, except "View Scrabble Board".
+//   - Answering N (No) to "Search? / Interview?" uses no turn.
+//   - A wrong step (wrong menu input, interview refused) costs -5 credibility.
+//   - The game ends when credibility is 0 or all turns are used.
+// =====================================================================
+
+// The Game Menu shown on every turn
+void GameEngine::showGameMenu() const
+{
+    cout << "\n==== Game Menu ====" << endl;
+    cout << "[1] Visit a Location" << endl;
+    cout << "[2] Interview a Person" << endl;
+    cout << "[3] View Scrabble Board  (free - no turn)" << endl;
+    cout << "[4] Form a Word" << endl;
+    cout << "[5] Accuse a Suspect" << endl;
+    cout << "[6] Quit" << endl;
+    cout << "Choice: ";
+}
+
+// Asks a Y/N question until the player types Y or N (small letters too)
+bool GameEngine::askYesNo(string question) const
+{
+    while (true)
+    {
+        cout << question << " (Y/N): ";
+        string answer;
+        getline(cin, answer);
+        answer = toUpperCase(trimSpaces(answer));
+
+        if (answer == "Y" || answer == "YES")
+        {
+            return true;
+        }
+        if (answer == "N" || answer == "NO")
+        {
+            return false;
+        }
+        cout << "Please type Y or N." << endl;
+    }
+}
+
+// A wrong step costs credibility (value from rules.txt, normally 5)
+void GameEngine::giveWrongStepPenalty(string reason)
+{
+    detective.loseCredibility(rules.wrongTurnPenalty);
+    cout << "Wrong step: " << reason << "  (-" << rules.wrongTurnPenalty
+        << " credibility, now " << detective.getCredibility() << ")" << endl;
+}
+
+// The GameEngine counts the turns; the Detective only stores the number
+void GameEngine::useTurn()
+{
+    detective.setTurns(detective.getTurns() + 1);
+}
+
+// Ends the game when the detective has no credibility or no turns left
+void GameEngine::checkGameOver()
+{
+    if (state != STATE_PLAYING)
+    {
+        return;
+    }
+
+    if (detective.getCredibility() <= 0)
+    {
+        cout << "\nYour credibility is ZERO. Nobody trusts you anymore!" << endl;
+        state = STATE_LOST;
+    }
+    else if (detective.getTurns() >= rules.maxTurns)
+    {
+        cout << "\nYou have used all " << rules.maxTurns << " turns!" << endl;
+        state = STATE_LOST;
+    }
+}
+
+// The loop of one game: one pass = one menu choice
+void GameEngine::playGame()
+{
+    state = STATE_PLAYING;
+
+    while (state == STATE_PLAYING)
+    {
+        clearScreen();
+        cout << "--- TURN " << (detective.getTurns() + 1) << " ---" << endl;
+        showGameStatus();
+        showGameMenu();
+
+        // 1. read the choice (wrong input = wrong step)
+        int choice;
+        try
+        {
+            choice = readNumber(1, 6);
+        }
+        catch (GameException& error)
+        {
+            cout << error.getFullMessage() << endl;
+            giveWrongStepPenalty("invalid menu choice");
+            checkGameOver();
+            pressEnterToContinue();
+            continue;
+        }
+
+        // 2. do the action
+        bool turnUsed = false;
+        try
+        {
+            switch (choice)
+            {
+            case 1:
+                turnUsed = visitLocation();
+                break;
+            case 2:
+                turnUsed = interviewPerson();
+                break;
+            case 3:
+                viewBoard();             // free: turnUsed stays false
+                break;
+            case 4:
+                cout << "\nForm a Word will be added in Module 14." << endl;
+                break;
+            case 5:
+                cout << "\nAccuse a Suspect will be added in Module 14." << endl;
+                break;
+            case 6:
+                if (askYesNo("Are you sure you want to quit this game?"))
+                {
+                    cout << "You left the investigation." << endl;
+                    state = STATE_LOST;
+                }
+                break;
+            }
+        }
+        catch (GameException& error)
+        {
+            cout << error.getFullMessage() << endl;
+        }
+
+        // 3. count the turn and check the end of the game
+        if (turnUsed)
+        {
+            useTurn();
+        }
+        checkGameOver();
+        pressEnterToContinue();
+    }
+
+    // The full WIN / LOSE screen and saving the score come in Module 14
+    clearScreen();
+    cout << "================= GAME OVER =================" << endl;
+    cout << "Credibility left : " << detective.getCredibility() << endl;
+    cout << "Turns used       : " << detective.getTurns() << " / " << rules.maxTurns << endl;
+    cout << "=============================================" << endl;
+    pressEnterToContinue();
+}
+
+// [1] Visit a Location
+// Shows the 7 locations. The first visit gives the letter and places it
+// on the board. A searched location can be searched again to see its
+// letter again. N (No) goes back to the location list.
+bool GameEngine::visitLocation()
+{
+    while (true)
+    {
+        cout << endl;
+        cottage.displayLocations();
+        cout << "[0] Back to the Game Menu" << endl;
+        cout << "Pick: ";
+
+        int number;
+        try
+        {
+            number = readNumber(0, cottage.getLocationCount());
+        }
+        catch (GameException& error)
+        {
+            cout << error.getFullMessage() << endl;
+            continue;                         // ask again
+        }
+
+        if (number == 0)
+        {
+            return false;                     // back, no turn used
+        }
+
+        string placeName = replaceUnderscores(cottage.getLocationName(number));
+
+        if (!cottage.isSearched(number))
+        {
+            // ----- first visit -----
+            cout << "You have NOT searched the " << placeName << " yet." << endl;
+            if (askYesNo("Search?"))
+            {
+                Clue foundClue = cottage.searchLocation(number);   // Location -> Clue
+                detective.collectClue(foundClue);                  // Clue -> Rack
+                scrabble.placeLetter(foundClue);                   // Clue -> Board
+
+                cout << "Letter " << foundClue.clueLetter << " collected at position "
+                    << foundClue.cluePosition << " of Word 1." << endl;
+                cout << "Letter has been placed." << endl;
+                return true;
+            }
+        }
+        else
+        {
+            // ----- visit again -----
+            cout << "The " << placeName << " has already been searched." << endl;
+            if (askYesNo("Do you want to search it again?"))
+            {
+                Clue oldClue = cottage.searchLocation(number);
+                cout << "You found letter " << oldClue.clueLetter << " at position "
+                    << oldClue.cluePosition << " of Word 1 here before." << endl;
+                return true;
+            }
+        }
+
+        cout << "Going back to the locations..." << endl;
+    }
+}
+
+// The list of the 8 people with their interview status
+void GameEngine::showPeopleMenu() const
+{
+    cout << "\n====== Character Menu ======" << endl;
+    for (int i = 0; i < peopleCount; i++)
+    {
+        string label = people[i]->getName() + " (" + people[i]->getRole() + ")";
+        cout << "[" << (i + 1) << "] " << padRight(label, 26) << "- "
+            << (people[i]->isInterviewed() ? "Interviewed" : "NOT Interviewed") << endl;
+    }
+    cout << "============================" << endl;
+}
+
+// [2] Interview a Person
+// The credibility condition is checked with the VIRTUAL function
+// canBeInterviewed(), so there is no if-else chain on the role here.
+bool GameEngine::interviewPerson()
+{
+    while (true)
+    {
+        showPeopleMenu();
+        cout << "[0] Back to the Game Menu" << endl;
+        cout << "Pick: ";
+
+        int number;
+        try
+        {
+            number = readNumber(0, peopleCount);
+        }
+        catch (GameException& error)
+        {
+            cout << error.getFullMessage() << endl;
+            continue;
+        }
+
+        if (number == 0)
+        {
+            return false;
+        }
+
+        Character* person = people[number - 1];
+
+        // Credibility condition (80 / 75 / 50 / 35 / any time)
+        if (!person->canBeInterviewed(detective.getCredibility()))
+        {
+            InterviewDeniedException denied(person->getName(), person->getRequiredCredibility());
+            cout << denied.getFullMessage() << endl;
+            giveWrongStepPenalty("interview refused");
+            return false;
+        }
+
+        if (!person->isInterviewed())
+        {
+            // ----- first interview -----
+            cout << "You have NOT interviewed " << person->getName() << " yet." << endl;
+            if (askYesNo("Interview?"))
+            {
+                cout << endl << *person;                 // polymorphic << (Module 11)
+
+                Clue personClue = person->getClue();     // Character -> Clue
+                detective.collectClue(personClue);       // Clue -> Rack
+                scrabble.placeLetter(personClue);        // Clue -> Board
+                person->setInterviewed(true);
+
+                cout << "\nLetter " << personClue.clueLetter << " collected at position "
+                    << personClue.cluePosition << " of Word 2." << endl;
+                cout << "Letter has been placed." << endl;
+                return true;
+            }
+        }
+        else
+        {
+            // ----- interview again -----
+            cout << person->getName() << " has already been interviewed." << endl;
+            if (askYesNo("Do you want to interview again?"))
+            {
+                Clue oldClue = person->getClue();
+                cout << person->getName() << " repeats: letter " << oldClue.clueLetter
+                    << " at position " << oldClue.cluePosition << " of Word 2." << endl;
+                return true;
+            }
+        }
+
+        cout << "Going back to the characters..." << endl;
+    }
+}
+
+// [3] View Scrabble Board (free: it does not use a turn)
+void GameEngine::viewBoard() const
+{
+    cout << endl;
+    detective.displayRacks();
+    cout << scrabble;
+    cout << "Word 1: " << scrabble.getFilledCount(WORD_1) << "/" << Scrabble::WORD1_LENGTH
+        << " letters   |   Word 2: " << scrabble.getFilledCount(WORD_2) << "/"
+        << Scrabble::WORD2_LENGTH << " letters" << endl;
 }
