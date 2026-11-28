@@ -17,10 +17,9 @@ before credibility or turns run out.
 
 | Member | GitHub Account | Roll Number | Commits (Modules) |
 |--------|----------------|-------------|-------------------|
-| Member 1 - [Full Name] | iawais-13 | 25F-3026 | Module 1, Module 7, Module 3 (Part A and B), Module 4 (Cottage), Module 6, Module 10 |
-| Member 2 - Ammar Haider | ammarhaider3538-design | 25F-0052 | Module 4 (Scrabble), Module 5, Module 8, Module 11, Module 2 + 12, Module 13, Module 14 |
-
-Program: BSE - Section: 3A - Group: 12 - Lab Instructor: [Instructor Name]
+| Member 1 - Muhammad Awais| iawais-13 | 25F-3026 | Module 1,7,3,9,4,6,10,14
+| Member 2 - Ammar Haider | ammarhaider3538-design | 25F-0052 | Module 4,5,8,11,2,12,13
+Program: BSE - Section: 3A - Group: 12 - Lab Instructor: [Mozeb Ahmed Khan]
 
 ---
 
